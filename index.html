@@ -1,0 +1,2554 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DONA RITA EMBALAGENS (SAC) - Sistema de Não Conformidades</title>
+    <style>
+        :root {
+            --primary: #3C1053;
+            --primary-light: #5B2A86;
+            --primary-dark: #1A0033;
+            --primary-glow: #8B5CF6;
+            --accent: #7C3AED;
+            --accent-light: #A78BFA;
+            --accent-dark: #3C1053;
+            --success: #3C1053;
+            --success-light: #7C3AED;
+            --danger: #D32F2F;
+            --warning: #F57C00;
+            --bg: #1A0033;
+            --bg-gradient: linear-gradient(135deg, #1A0033 0%, #2D0A4E 30%, #3C1053 70%, #1A0033 100%);
+            --card-bg: #FFFFFF;
+            --text: #1A1A2E;
+            --text-light: #5C5C8A;
+            --border: #C5CAE9;
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+            --shadow-hover: 0 16px 45px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 30px rgba(124, 58, 237, 0.4);
+            --radius: 20px;
+            --radius-sm: 12px;
+            --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            background-image: var(--bg-gradient);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 30%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 70%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(167, 139, 250, 0.1) 0%, transparent 60%);
+            animation: bgFloat 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes bgFloat {
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            25% {
+                transform: translate(1%, -1%) rotate(1deg);
+            }
+            50% {
+                transform: translate(-1%, 0.5%) rotate(-1deg);
+            }
+            75% {
+                transform: translate(0.5%, 1%) rotate(0.5deg);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1A0033 0%, #3C1053 30%, #5B2A86 55%, #7C3AED 100%);
+            background-size: 300% 300%;
+            animation: headerGradient 8s ease infinite;
+            color: #fff;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+            border-bottom: 3px solid var(--accent);
+            flex-shrink: 0;
+        }
+
+        @keyframes headerGradient {
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .header-inner {
+            max-width: 100%;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo-icon {
+            width: 52px;
+            height: 52px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            animation: iconPulse 3s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes iconPulse {
+            0%,
+            100% {
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 8px 40px rgba(124, 58, 237, 0.6);
+            }
+        }
+
+        .logo-text h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+            line-height: 1.2;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            white-space: nowrap;
+        }
+
+        .logo-text .sac-badge {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            color: #fff;
+            padding: 3px 12px;
+            border-radius: 30px;
+            font-size: 0.62rem;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            display: inline-block;
+            margin-top: 2px;
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.5);
+            animation: badgeGlow 2.5s ease-in-out infinite;
+        }
+
+        @keyframes badgeGlow {
+            0%,
+            100% {
+                box-shadow: 0 4px 15px rgba(124, 58, 237, 0.5);
+            }
+            50% {
+                box-shadow: 0 4px 30px rgba(124, 58, 237, 0.8);
+            }
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stat-badge {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(14px);
+            border: 1.5px solid rgba(255, 255, 255, 0.18);
+            border-radius: 12px;
+            padding: 10px 18px;
+            text-align: center;
+            min-width: 80px;
+            transition: var(--transition);
+            cursor: default;
+        }
+
+        .stat-badge:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.35);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-badge .stat-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-badge .stat-label {
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.85;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 24px 24px 24px;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        /* ===== TABS ===== */
+        .tabs-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            padding: 10px;
+            border-radius: var(--radius);
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
+            flex-shrink: 0;
+        }
+
+        .tab-btn {
+            padding: 12px 22px;
+            border: none;
+            background: transparent;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            color: rgba(255, 255, 255, 0.75);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font);
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .tab-btn:hover::before {
+            left: 100%;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #3C1053 0%, #5B2A86 100%);
+            color: #fff;
+            box-shadow: 0 8px 25px rgba(60, 16, 83, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 3px;
+            background: var(--accent);
+            border-radius: 4px;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeInUp 0.45s ease;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(25px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: var(--transition);
+            border: 1px solid rgba(197, 202, 233, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #3C1053 0%, #7C3AED 50%, #A78BFA 100%);
+            background-size: 200% 100%;
+            animation: cardBorderGlow 4s ease infinite;
+        }
+
+        @keyframes cardBorderGlow {
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #3C1053;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid #E8EAF6;
+        }
+
+        .card-title .icon {
+            font-size: 1.4rem;
+            animation: titleIconBounce 2s ease-in-out infinite;
+        }
+
+        @keyframes titleIconBounce {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-4px);
+            }
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group.half-width {
+            grid-column: span 1;
+        }
+
+        .form-label {
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: var(--text);
+            letter-spacing: 0.3px;
+        }
+
+        .form-label .required {
+            color: var(--danger);
+            font-weight: 800;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            padding: 11px 15px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-family: var(--font);
+            transition: var(--transition);
+            background: #FAFAFE;
+            color: var(--text);
+            outline: none;
+            width: 100%;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            border-color: #5B2A86;
+            background: #fff;
+            box-shadow: 0 0 0 5px rgba(91, 42, 134, 0.15), 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-textarea {
+            min-height: 75px;
+            resize: vertical;
+        }
+
+        .form-input:hover,
+        .form-select:hover,
+        .form-textarea:hover {
+            border-color: #A78BFA;
+        }
+
+        .form-input:disabled {
+            background: #E8EAF6;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 10px 16px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            font-weight: 600;
+            font-size: 0.85rem;
+            background: #FAFAFE;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .radio-label::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(60, 16, 83, 0.06) 0%, rgba(124, 58, 237, 0.04) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .radio-label:hover::before {
+            opacity: 1;
+        }
+
+        .radio-label:hover {
+            border-color: #5B2A86;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(60, 16, 83, 0.15);
+        }
+
+        .radio-label input[type="radio"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            transition: var(--transition);
+            flex-shrink: 0;
+            z-index: 1;
+        }
+
+        .radio-label input[type="radio"]:checked {
+            border-color: #3C1053;
+            background: #3C1053;
+            box-shadow: inset 0 0 0 4px #fff, 0 0 12px rgba(60, 16, 83, 0.4);
+        }
+
+        .radio-label:has(input:checked) {
+            border-color: #3C1053;
+            background: #F3E5F5;
+            color: #3C1053;
+            font-weight: 700;
+            box-shadow: 0 4px 20px rgba(60, 16, 83, 0.2);
+        }
+
+        .btn {
+            padding: 11px 22px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            letter-spacing: 0.4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font);
+            text-decoration: none;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3C1053 0%, #5B2A86 100%);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(60, 16, 83, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(60, 16, 83, 0.55);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #3C1053 0%, #7C3AED 100%);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(60, 16, 83, 0.4);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(60, 16, 83, 0.55);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #C62828 0%, var(--danger) 100%);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(211, 47, 47, 0.35);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(211, 47, 47, 0.5);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #E65100 0%, var(--warning) 100%);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(245, 124, 0, 0.35);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(245, 124, 0, 0.5);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #3C1053;
+            border: 2px solid #3C1053;
+        }
+
+        .btn-outline:hover {
+            background: #3C1053;
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(60, 16, 83, 0.35);
+        }
+
+        .btn-sm {
+            padding: 7px 13px;
+            font-size: 0.75rem;
+            border-radius: 7px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            padding: 16px 0;
+            border-bottom: 2px solid #E8EAF6;
+            margin-bottom: 18px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 140px;
+        }
+
+        .filter-label {
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-light);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            max-height: calc(100vh - 300px);
+            overflow-y: auto;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.03);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            min-width: 1100px;
+        }
+
+        .table thead {
+            background: linear-gradient(135deg, #3C1053 0%, #5B2A86 100%);
+            color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table th {
+            padding: 13px 15px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            white-space: nowrap;
+            border-bottom: 3px solid #7C3AED;
+        }
+
+        .table td {
+            padding: 11px 15px;
+            border-bottom: 1px solid #E8EAF6;
+            vertical-align: middle;
+            color: var(--text);
+            transition: background 0.25s ease;
+        }
+
+        .table tbody tr {
+            transition: var(--transition);
+        }
+
+        .table tbody tr:hover {
+            background: #F0F0F8;
+            transform: scale(1.001);
+        }
+
+        .table tbody tr:nth-child(even) {
+            background: #FAFAFE;
+        }
+
+        .table tbody tr:nth-child(even):hover {
+            background: #E8EAF6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 13px;
+            border-radius: 25px;
+            font-size: 0.66rem;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            transition: var(--transition);
+        }
+
+        .badge:hover {
+            transform: scale(1.04);
+        }
+
+        .badge-concluido {
+            background: #F3E5F5;
+            color: #3C1053;
+            border: 1.5px solid #B39DDB;
+            box-shadow: 0 2px 8px rgba(60, 16, 83, 0.15);
+        }
+
+        .badge-aguardando {
+            background: #FFF8E1;
+            color: #B8860B;
+            border: 1.5px solid #FFE082;
+            box-shadow: 0 2px 8px rgba(184, 134, 11, 0.15);
+        }
+
+        .badge-contabilizando {
+            background: #E3F2FD;
+            color: #1A6B9E;
+            border: 1.5px solid #90CAF9;
+            box-shadow: 0 2px 8px rgba(26, 107, 158, 0.15);
+        }
+
+        .badge-reposicao {
+            background: #FBE9E7;
+            color: #C0392B;
+            border: 1.5px solid #F5B7B1;
+            box-shadow: 0 2px 8px rgba(192, 57, 43, 0.15);
+        }
+
+        .badge-abertura {
+            background: #E3F2FD;
+            color: #3C1053;
+            border: 1.5px solid #90CAF9;
+            box-shadow: 0 2px 8px rgba(60, 16, 83, 0.15);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: var(--radius);
+            max-width: 680px;
+            width: 92%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 28px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5);
+            animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 3px solid transparent;
+            border-image: linear-gradient(135deg, #3C1053 0%, #7C3AED 100%) 1;
+        }
+
+        @keyframes modalSlideUp {
+            from {
+                transform: translateY(60px) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid #E8EAF6;
+        }
+
+        .modal-header h3 {
+            font-size: 1.15rem;
+            color: #3C1053;
+            font-weight: 800;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: var(--transition);
+            line-height: 1;
+            padding: 2px 8px;
+            border-radius: 8px;
+        }
+
+        .modal-close:hover {
+            background: #FEE;
+            color: var(--danger);
+            transform: rotate(90deg);
+        }
+
+        .modal-detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .modal-detail-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #F0F0F8;
+        }
+
+        .modal-detail-item .label {
+            font-size: 0.64rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-light);
+            margin-bottom: 2px;
+        }
+
+        .modal-detail-item .value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        .modal-detail-item.full {
+            grid-column: 1 / -1;
+        }
+
+        .timeline {
+            margin: 8px 0;
+            padding-left: 20px;
+            border-left: 3px solid var(--border);
+        }
+
+        .timeline-item {
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #5B2A86;
+            border: 3px solid #fff;
+            box-shadow: 0 0 0 3px #5B2A86, 0 0 15px rgba(91, 42, 134, 0.4);
+        }
+
+        .timeline-item .etapa {
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .timeline-item .data {
+            font-size: 0.7rem;
+            color: var(--text-light);
+        }
+
+        /* ===== DASHBOARD ===== */
+        .dash-hero-kpis {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .dash-hero-card {
+            border-radius: var(--radius);
+            padding: 24px 22px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+            cursor: default;
+            border: 2px solid transparent;
+        }
+
+        .dash-hero-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .dash-hero-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
+            animation: heroCardShine 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes heroCardShine {
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+            50% {
+                transform: translate(10%, 10%);
+            }
+        }
+
+        .dash-hero-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .dash-hero-card.pendentes {
+            background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 40%, #FFCC80 100%);
+            border-color: var(--warning);
+            box-shadow: 0 10px 35px rgba(245, 124, 0, 0.3);
+        }
+
+        .dash-hero-card.pendentes:hover {
+            box-shadow: 0 18px 50px rgba(245, 124, 0, 0.45);
+        }
+
+        .dash-hero-card.concluidos {
+            background: linear-gradient(135deg, #E8EAF6 0%, #C5CAE9 40%, #9FA8DA 100%);
+            border-color: #3C1053;
+            box-shadow: 0 10px 35px rgba(60, 16, 83, 0.3);
+        }
+
+        .dash-hero-card.concluidos:hover {
+            box-shadow: 0 18px 50px rgba(60, 16, 83, 0.45);
+        }
+
+        .dash-hero-icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+            animation: dashIconFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes dashIconFloat {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-6px);
+            }
+        }
+
+        .dash-hero-label {
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text);
+            position: relative;
+            z-index: 1;
+        }
+
+        .dash-hero-value {
+            font-size: 3.2rem;
+            font-weight: 900;
+            line-height: 1.1;
+            color: var(--text);
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .dash-hero-card.pendentes .dash-hero-value {
+            color: #E65100;
+        }
+
+        .dash-hero-card.concluidos .dash-hero-value {
+            color: #3C1053;
+        }
+
+        .dash-hero-sub {
+            font-size: 0.74rem;
+            color: var(--text-light);
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: #fff;
+            border-radius: var(--radius-sm);
+            padding: 18px 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+            border: 1.5px solid var(--border);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, #5B2A86 0%, #7C3AED 100%);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(60, 16, 83, 0.18);
+            border-color: #5B2A86;
+        }
+
+        .kpi-label {
+            font-size: 0.64rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #3C1053;
+            line-height: 1.2;
+        }
+
+        .kpi-sub {
+            font-size: 0.7rem;
+            color: var(--text-light);
+            font-weight: 600;
+            margin-top: 3px;
+        }
+
+        .kpi-card.accent .kpi-value {
+            color: #7C3AED;
+        }
+
+        .kpi-card.warning .kpi-value {
+            color: var(--warning);
+        }
+
+        .kpi-card.danger .kpi-value {
+            color: var(--danger);
+        }
+
+        .dashboard-section {
+            margin-bottom: 24px;
+        }
+
+        .dashboard-section-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #3C1053;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #E8EAF6;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .material-list {
+            list-style: none;
+        }
+
+        .material-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 11px 14px;
+            border-bottom: 1px solid #F0F0F8;
+            transition: var(--transition);
+            border-radius: 7px;
+        }
+
+        .material-list li:hover {
+            background: #F0F0F8;
+            transform: translateX(3px);
+        }
+
+        .material-name {
+            font-weight: 700;
+            flex: 1;
+            color: var(--text);
+            font-size: 0.88rem;
+        }
+
+        .material-count {
+            background: linear-gradient(135deg, #3C1053 0%, #5B2A86 100%);
+            color: #fff;
+            padding: 4px 13px;
+            border-radius: 25px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            margin: 0 10px;
+            box-shadow: 0 3px 10px rgba(60, 16, 83, 0.25);
+            white-space: nowrap;
+        }
+
+        .material-value {
+            font-weight: 800;
+            color: #3C1053;
+            font-size: 0.88rem;
+            white-space: nowrap;
+        }
+
+        .distribution-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .distribution-item {
+            background: #FAFAFE;
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            border: 1.5px solid var(--border);
+            transition: var(--transition);
+        }
+
+        .distribution-item:hover {
+            border-color: #5B2A86;
+            box-shadow: 0 6px 20px rgba(60, 16, 83, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .distribution-item h4 {
+            font-size: 0.74rem;
+            font-weight: 800;
+            color: var(--text-light);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #E8EAF6;
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #5B2A86 0%, #7C3AED 100%);
+            border-radius: 5px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: progressShine 2s ease infinite;
+        }
+
+        @keyframes progressShine {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .distribution-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+        }
+
+        .distribution-label {
+            font-weight: 600;
+            font-size: 0.82rem;
+            color: var(--text);
+        }
+
+        .distribution-count {
+            font-weight: 800;
+            color: #3C1053;
+            font-size: 0.82rem;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: linear-gradient(135deg, #1A0033 0%, #3C1053 100%);
+            color: #fff;
+            padding: 15px 22px;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            font-size: 0.85rem;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            animation: toastSlideUp 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 380px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes toastSlideUp {
+            from {
+                transform: translateY(80px) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, #3C1053 0%, #5B2A86 100%);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #B71C1C 0%, #D32F2F 100%);
+        }
+
+        .toast.warning {
+            background: linear-gradient(135deg, #E65100 0%, #F57C00 100%);
+        }
+
+        @media (max-width: 768px) {
+            .header-inner {
+                padding: 12px 14px;
+                flex-direction: column;
+                text-align: center;
+                gap: 8px;
+            }
+
+            .logo-area {
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .logo-text h1 {
+                font-size: 1.05rem;
+                white-space: normal;
+            }
+
+            .header-stats {
+                gap: 6px;
+                justify-content: center;
+            }
+
+            .stat-badge {
+                padding: 6px 10px;
+                min-width: 60px;
+            }
+
+            .stat-badge .stat-value {
+                font-size: 1rem;
+            }
+
+            .container {
+                padding: 14px 10px;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-group.half-width {
+                grid-column: 1 / -1;
+            }
+
+            .modal-detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                padding: 9px 16px;
+                font-size: 0.8rem;
+            }
+
+            .tabs-nav {
+                flex-direction: column;
+            }
+
+            .tab-btn {
+                justify-content: center;
+            }
+
+            .dash-hero-kpis {
+                grid-template-columns: 1fr;
+            }
+
+            .dash-hero-value {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-stats {
+                display: none;
+            }
+
+            .logo-text h1 {
+                font-size: 0.9rem;
+            }
+
+            .card-title {
+                font-size: 0.95rem;
+            }
+
+            .dash-hero-value {
+                font-size: 2rem;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #5B2A86 0%, #3C1053 100%);
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #7C3AED 0%, #5B2A86 100%);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state .icon {
+            font-size: 3.5rem;
+            margin-bottom: 14px;
+            opacity: 0.5;
+            animation: emptyFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes emptyFloat {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .empty-state h3 {
+            font-size: 1.1rem;
+            color: var(--text);
+            margin-bottom: 6px;
+            font-weight: 800;
+        }
+
+        .empty-state p {
+            font-size: 0.82rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo-area">
+                <div class="logo-icon">📦</div>
+                <div class="logo-text">
+                    <h1>DONA RITA EMBALAGENS</h1>
+                    <span class="sac-badge">SAC</span>
+                </div>
+            </div>
+            <div class="header-stats">
+                <div class="stat-badge">
+                    <div class="stat-value" id="statTotal">0</div>
+                    <div class="stat-label">Registros</div>
+                </div>
+                <div class="stat-badge">
+                    <div class="stat-value" id="statPendentes">0</div>
+                    <div class="stat-label">Pendentes</div>
+                </div>
+                <div class="stat-badge">
+                    <div class="stat-value" id="statConcluidos">0</div>
+                    <div class="stat-label">Concluídos</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- ===== NAVEGAÇÃO POR ABAS ===== -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" data-tab="registro">📝 Registro</button>
+            <button class="tab-btn" data-tab="historico">📋 Histórico</button>
+            <button class="tab-btn" data-tab="dashboard">📊 Dashboard</button>
+        </div>
+
+        <!-- ===== ABA: REGISTRO ===== -->
+        <div class="tab-content active" id="tab-registro">
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">📝</span> Registrar Não Conformidade / Reclamação
+                </div>
+                <form id="formNaoConformidade" autocomplete="off">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Nº Registro <span class="required">*</span></label>
+                            <input type="text" class="form-input" id="numRegistro" placeholder="Digite o número manualmente" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Cliente <span class="required">*</span></label>
+                            <input type="text" class="form-input" id="cliente" placeholder="Nome do cliente" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Data da Ocorrência <span class="required">*</span></label>
+                            <input type="date" class="form-input" id="dataOcorrencia" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Área Envolvida <span class="required">*</span></label>
+                            <select class="form-select" id="areaEnvolvida" required>
+                                <option value="">Selecione...</option>
+                                <option value="Produção">Produção</option>
+                                <option value="Qualidade">Qualidade</option>
+                                <option value="Logística">Logística</option>
+                                <option value="Expedição">Expedição</option>
+                                <option value="Comercial">Comercial</option>
+                                <option value="Compras">Compras</option>
+                                <option value="Manutenção">Manutenção</option>
+                                <option value="Administrativo">Administrativo</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Origem <span class="required">*</span></label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="origem" value="Interno" checked>
+                                    🏭 Interno
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="origem" value="Externo">
+                                    🌐 Externo
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Turno <span class="required">*</span></label>
+                            <select class="form-select" id="turno" required>
+                                <option value="">Selecione...</option>
+                                <option value="1º Turno - Manhã">1º Turno - Manhã</option>
+                                <option value="2º Turno - Tarde">2º Turno - Tarde</option>
+                                <option value="3º Turno - Noite">3º Turno - Noite</option>
+                                <option value="Administrativo">Administrativo</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Causa Resumida <span class="required">*</span></label>
+                            <input type="text" class="form-input" id="causaResumida" placeholder="Resumo da causa" required>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label">Causa do Problema (Completo) <span class="required">*</span></label>
+                            <textarea class="form-textarea" id="causaCompleta" placeholder="Descreva detalhadamente a causa do problema..." required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Código do Item</label>
+                            <input type="text" class="form-input" id="codItem" placeholder="Código do item">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Descrição do Produto</label>
+                            <input type="text" class="form-input" id="descricaoProduto" placeholder="Descrição do produto">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Quantidade Faturada</label>
+                            <input type="number" class="form-input" id="qtdFaturada" placeholder="0" min="0" step="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">OP (Ordem de Produção)</label>
+                            <input type="text" class="form-input" id="op" placeholder="Nº da OP">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Andamento <span class="required">*</span></label>
+                            <select class="form-select" id="andamento" required>
+                                <option value="Abertura da RNC" selected>🔓 Abertura da RNC</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label">Solução do Problema</label>
+                            <textarea class="form-textarea" id="solucaoProblema" placeholder="Descreva a solução aplicada ou proposta..." rows="3"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Valor da NFD (R$)</label>
+                            <input type="number" class="form-input" id="valorNFD" placeholder="0.00" min="0" step="0.01">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <div class="btn-group" style="margin-top: 8px;">
+                                <button type="submit" class="btn btn-success" id="btnSalvar">
+                                    💾 Salvar Registro
+                                </button>
+                                <button type="button" class="btn btn-outline" id="btnLimpar">
+                                    🧹 Limpar Formulário
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===== ABA: HISTÓRICO ===== -->
+        <div class="tab-content" id="tab-historico">
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">📋</span> Histórico de Não Conformidades
+                </div>
+
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label class="filter-label">📅 Filtrar por Data Específica</label>
+                        <input type="date" class="form-input" id="filtroData" style="min-width: 160px;">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">📆 Filtrar por Mês</label>
+                        <input type="month" class="form-input" id="filtroMes" style="min-width: 160px;">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">🔍 Buscar Cliente / Registro</label>
+                        <input type="text" class="form-input" id="filtroBusca" placeholder="Digite para buscar..." style="min-width: 180px;">
+                    </div>
+                    <button class="btn btn-outline btn-sm" id="btnLimparFiltros" style="margin-bottom: 2px;">
+                        ✖ Limpar Filtros
+                    </button>
+                </div>
+
+                <div class="table-wrapper" id="tableWrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nº Registro</th>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Área</th>
+                                <th>Origem</th>
+                                <th>Causa Resumida</th>
+                                <th>Andamento</th>
+                                <th>Tempo Total</th>
+                                <th>Valor NFD</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaHistorico"></tbody>
+                    </table>
+                    <div class="empty-state" id="emptyState" style="display: none;">
+                        <div class="icon">📭</div>
+                        <h3>Nenhum registro encontrado</h3>
+                        <p>Cadastre uma nova não conformidade ou ajuste os filtros.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== ABA: DASHBOARD ===== -->
+        <div class="tab-content" id="tab-dashboard">
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">📊</span> Dashboard de KPIs
+                </div>
+
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label class="filter-label">📅 Dia Específico</label>
+                        <input type="date" class="form-input" id="dashFiltroData" style="min-width: 160px;">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">📆 Mês</label>
+                        <input type="month" class="form-input" id="dashFiltroMes" style="min-width: 160px;">
+                    </div>
+                    <button class="btn btn-outline btn-sm" id="btnLimparFiltrosDash" style="margin-bottom: 2px;">
+                        ✖ Limpar Filtros
+                    </button>
+                </div>
+
+                <div class="dash-hero-kpis">
+                    <div class="dash-hero-card pendentes">
+                        <div class="dash-hero-icon">⏳</div>
+                        <div class="dash-hero-label">Pendentes</div>
+                        <div class="dash-hero-value" id="dashKpiPendentes">0</div>
+                        <div class="dash-hero-sub">não conformidades em aberto</div>
+                    </div>
+                    <div class="dash-hero-card concluidos">
+                        <div class="dash-hero-icon">✅</div>
+                        <div class="dash-hero-label">Concluídos</div>
+                        <div class="dash-hero-value" id="dashKpiConcluidos">0</div>
+                        <div class="dash-hero-sub">não conformidades resolvidas</div>
+                    </div>
+                </div>
+
+                <div class="kpi-grid" id="kpiGrid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Total de Não Conformidades</div>
+                        <div class="kpi-value" id="kpiTotalNC">0</div>
+                        <div class="kpi-sub">no período filtrado</div>
+                    </div>
+                    <div class="kpi-card accent">
+                        <div class="kpi-label">Total Faturado (Qtd)</div>
+                        <div class="kpi-value" id="kpiTotalFaturado">0</div>
+                        <div class="kpi-sub">soma das quantidades</div>
+                    </div>
+                    <div class="kpi-card warning">
+                        <div class="kpi-label">Total NFD (R$)</div>
+                        <div class="kpi-value" id="kpiTotalNFD">R$ 0,00</div>
+                        <div class="kpi-sub">soma dos valores</div>
+                    </div>
+                    <div class="kpi-card danger">
+                        <div class="kpi-label">Tempo Médio de Resolução</div>
+                        <div class="kpi-value" id="kpiTempoMedio">0min</div>
+                        <div class="kpi-sub">apenas concluídos</div>
+                    </div>
+                </div>
+
+                <div class="dashboard-section">
+                    <div class="dashboard-section-title">🔧 Materiais com Mais Problemas (e valor NFD)</div>
+                    <ul class="material-list" id="materialList">
+                        <li style="justify-content: center; color: var(--text-light);">Nenhum dado disponível</li>
+                    </ul>
+                </div>
+
+                <div class="dashboard-section">
+                    <div class="dashboard-section-title">📈 Distribuições</div>
+                    <div class="distribution-grid">
+                        <div class="distribution-item">
+                            <h4>Por Área</h4>
+                            <div id="distArea"></div>
+                        </div>
+                        <div class="distribution-item">
+                            <h4>Por Origem</h4>
+                            <div id="distOrigem"></div>
+                        </div>
+                        <div class="distribution-item">
+                            <h4>Por Andamento</h4>
+                            <div id="distAndamento"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>🔍 Detalhes do Registro</h3>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-detail-grid" id="modalContent"></div>
+            <div class="btn-group" style="margin-top: 20px; justify-content: flex-end;">
+                <button class="btn btn-outline btn-sm" id="btnEditarDoModal">✏️ Editar</button>
+                <button class="btn btn-danger btn-sm" id="btnExcluirDoModal">🗑️ Excluir</button>
+                <button class="btn btn-outline btn-sm" id="btnFecharModal">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer"></div>
+
+    <script>
+        (function() {
+            // ==================== CONSTANTES E ESTADO ====================
+            const STORAGE_KEY = 'donaRitaSAC_registros';
+            let registros = [];
+            let registroEmEdicao = null;
+            let registroSelecionado = null;
+
+            // ==================== ELEMENTOS DOM ====================
+            const form = document.getElementById('formNaoConformidade');
+            const numRegistroInput = document.getElementById('numRegistro');
+            const clienteInput = document.getElementById('cliente');
+            const dataOcorrenciaInput = document.getElementById('dataOcorrencia');
+            const areaEnvolvidaInput = document.getElementById('areaEnvolvida');
+            const origemRadios = document.querySelectorAll('input[name="origem"]');
+            const turnoInput = document.getElementById('turno');
+            const causaResumidaInput = document.getElementById('causaResumida');
+            const causaCompletaInput = document.getElementById('causaCompleta');
+            const codItemInput = document.getElementById('codItem');
+            const descricaoProdutoInput = document.getElementById('descricaoProduto');
+            const qtdFaturadaInput = document.getElementById('qtdFaturada');
+            const opInput = document.getElementById('op');
+            const andamentoInput = document.getElementById('andamento');
+            const solucaoProblemaInput = document.getElementById('solucaoProblema');
+            const valorNFDInput = document.getElementById('valorNFD');
+
+            const btnSalvar = document.getElementById('btnSalvar');
+            const btnLimpar = document.getElementById('btnLimpar');
+            const btnLimparFiltros = document.getElementById('btnLimparFiltros');
+
+            const filtroData = document.getElementById('filtroData');
+            const filtroMes = document.getElementById('filtroMes');
+            const filtroBusca = document.getElementById('filtroBusca');
+
+            const tabelaHistorico = document.getElementById('tabelaHistorico');
+            const emptyState = document.getElementById('emptyState');
+            const tableWrapper = document.getElementById('tableWrapper');
+
+            const statTotal = document.getElementById('statTotal');
+            const statPendentes = document.getElementById('statPendentes');
+            const statConcluidos = document.getElementById('statConcluidos');
+
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalContent = document.getElementById('modalContent');
+            const modalClose = document.getElementById('modalClose');
+            const btnEditarDoModal = document.getElementById('btnEditarDoModal');
+            const btnExcluirDoModal = document.getElementById('btnExcluirDoModal');
+            const btnFecharModal = document.getElementById('btnFecharModal');
+
+            const toastContainer = document.getElementById('toastContainer');
+
+            // Dashboard elements
+            const dashFiltroData = document.getElementById('dashFiltroData');
+            const dashFiltroMes = document.getElementById('dashFiltroMes');
+            const btnLimparFiltrosDash = document.getElementById('btnLimparFiltrosDash');
+            const dashKpiPendentes = document.getElementById('dashKpiPendentes');
+            const dashKpiConcluidos = document.getElementById('dashKpiConcluidos');
+            const kpiTotalNC = document.getElementById('kpiTotalNC');
+            const kpiTotalFaturado = document.getElementById('kpiTotalFaturado');
+            const kpiTotalNFD = document.getElementById('kpiTotalNFD');
+            const kpiTempoMedio = document.getElementById('kpiTempoMedio');
+            const materialList = document.getElementById('materialList');
+            const distArea = document.getElementById('distArea');
+            const distOrigem = document.getElementById('distOrigem');
+            const distAndamento = document.getElementById('distAndamento');
+
+            // Abas
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            // ==================== FUNÇÕES UTILITÁRIAS ====================
+            function formatarData(dataISO) {
+                if (!dataISO) return '-';
+                const [ano, mes, dia] = dataISO.split('-');
+                return `${dia}/${mes}/${ano}`;
+            }
+
+            function formatarDataHora(timestamp) {
+                if (!timestamp) return '-';
+                const dt = new Date(timestamp);
+                return dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', { hour: '2-digit',
+                    minute: '2-digit' });
+            }
+
+            function formatarValor(valor) {
+                if (valor === null || valor === undefined || valor === '' || isNaN(valor)) return '-';
+                return 'R$ ' + parseFloat(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2,
+                    maximumFractionDigits: 2 });
+            }
+
+            function formatarDuracao(ms) {
+                if (ms < 0) ms = 0;
+                const segundos = Math.floor(ms / 1000);
+                const dias = Math.floor(segundos / 86400);
+                const horas = Math.floor((segundos % 86400) / 3600);
+                const minutos = Math.floor((segundos % 3600) / 60);
+                let resultado = '';
+                if (dias > 0) resultado += `${dias}d `;
+                if (horas > 0 || dias > 0) resultado += `${horas}h `;
+                resultado += `${minutos}min`;
+                return resultado;
+            }
+
+            function getOrigemSelecionada() {
+                for (const radio of origemRadios) {
+                    if (radio.checked) return radio.value;
+                }
+                return 'Interno';
+            }
+
+            function setOrigemSelecionada(valor) {
+                for (const radio of origemRadios) {
+                    radio.checked = (radio.value === valor);
+                }
+            }
+
+            function getStatusBadgeClass(andamento) {
+                switch (andamento) {
+                    case 'Concluído':
+                        return 'badge-concluido';
+                    case 'Aguardando nota de devolução':
+                        return 'badge-aguardando';
+                    case 'Cliente contabilizando':
+                        return 'badge-contabilizando';
+                    case 'Enviar reposição':
+                        return 'badge-reposicao';
+                    case 'Abertura da RNC':
+                        return 'badge-abertura';
+                    default:
+                        return '';
+                }
+            }
+
+            function getStatusIcon(andamento) {
+                switch (andamento) {
+                    case 'Concluído':
+                        return '✅';
+                    case 'Aguardando nota de devolução':
+                        return '⏳';
+                    case 'Cliente contabilizando':
+                        return '📊';
+                    case 'Enviar reposição':
+                        return '📦';
+                    case 'Abertura da RNC':
+                        return '🔓';
+                    default:
+                        return '•';
+                }
+            }
+
+            function mostrarToast(mensagem, tipo = 'success') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${tipo}`;
+                const icon = tipo === 'success' ? '✅' : tipo === 'error' ? '❌' : '⚠️';
+                toast.innerHTML = `<span>${icon}</span> ${mensagem}`;
+                toastContainer.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.4s ease';
+                    setTimeout(() => toast.remove(), 400);
+                }, 3200);
+            }
+
+            function carregarRegistros() {
+                try {
+                    const dados = localStorage.getItem(STORAGE_KEY);
+                    registros = dados ? JSON.parse(dados) : [];
+                    registros.sort((a, b) => {
+                        const numA = parseInt(a.numRegistro) || 0;
+                        const numB = parseInt(b.numRegistro) || 0;
+                        return numB - numA;
+                    });
+                } catch (e) {
+                    console.error('Erro ao carregar registros:', e);
+                    registros = [];
+                }
+            }
+
+            function salvarRegistros() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(registros));
+                } catch (e) {
+                    console.error('Erro ao salvar registros:', e);
+                    mostrarToast('Erro ao salvar dados!', 'error');
+                }
+            }
+
+            function atualizarStats() {
+                statTotal.textContent = registros.length;
+                const pendentes = registros.filter(r => r.andamento !== 'Concluído').length;
+                const concluidos = registros.filter(r => r.andamento === 'Concluído').length;
+                statPendentes.textContent = pendentes;
+                statConcluidos.textContent = concluidos;
+            }
+
+            function calcularTempoTotal(registro) {
+                if (!registro.dataAbertura) return 0;
+                const inicio = new Date(registro.dataAbertura).getTime();
+                let fim;
+                if (registro.andamento === 'Concluído' && registro.historicoEtapas) {
+                    const etapaConcluida = registro.historicoEtapas.find(e => e.etapa === 'Concluído');
+                    if (etapaConcluida) {
+                        fim = new Date(etapaConcluida.timestamp).getTime();
+                    } else {
+                        fim = Date.now();
+                    }
+                } else {
+                    fim = Date.now();
+                }
+                return fim - inicio;
+            }
+
+            function popularSelectAndamento(modoEdicao = false, andamentoAtual = null) {
+                const opcoes = [
+                    { valor: 'Abertura da RNC', texto: '🔓 Abertura da RNC' },
+                    { valor: 'Aguardando nota de devolução', texto: '⏳ Aguardando nota de devolução' },
+                    { valor: 'Cliente contabilizando', texto: '📊 Cliente contabilizando' },
+                    { valor: 'Enviar reposição', texto: '📦 Enviar reposição' },
+                    { valor: 'Concluído', texto: '✅ Concluído' }
+                ];
+
+                andamentoInput.innerHTML = '';
+                if (!modoEdicao) {
+                    const opt = document.createElement('option');
+                    opt.value = 'Abertura da RNC';
+                    opt.textContent = '🔓 Abertura da RNC';
+                    opt.selected = true;
+                    andamentoInput.appendChild(opt);
+                    return;
+                }
+
+                opcoes.forEach(op => {
+                    const opt = document.createElement('option');
+                    opt.value = op.valor;
+                    opt.textContent = op.texto;
+                    if (andamentoAtual && op.valor === andamentoAtual) {
+                        opt.selected = true;
+                    }
+                    andamentoInput.appendChild(opt);
+                });
+            }
+
+            // ==================== ABAS ====================
+            function alternarAba(tabId) {
+                tabButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.tab === tabId);
+                });
+                tabContents.forEach(content => {
+                    content.classList.toggle('active', content.id === `tab-${tabId}`);
+                });
+                if (tabId === 'dashboard') {
+                    renderizarDashboard();
+                }
+                if (tabId === 'historico') {
+                    renderizarTabela();
+                }
+            }
+
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    alternarAba(btn.dataset.tab);
+                });
+            });
+
+            // ==================== RENDERIZAÇÃO DA TABELA ====================
+            function renderizarTabela() {
+                const dataFiltro = filtroData.value;
+                const mesFiltro = filtroMes.value;
+                const busca = filtroBusca.value.toLowerCase().trim();
+
+                let filtrados = registros.filter(r => {
+                    let passa = true;
+                    if (dataFiltro && r.dataOcorrencia !== dataFiltro) passa = false;
+                    if (mesFiltro && !r.dataOcorrencia.startsWith(mesFiltro)) passa = false;
+                    if (busca) {
+                        const buscaCampos = [
+                            r.numRegistro,
+                            r.cliente,
+                            r.causaResumida,
+                            r.causaCompleta,
+                            r.codItem,
+                            r.descricaoProduto,
+                            r.op,
+                            r.areaEnvolvida,
+                            r.andamento,
+                        ].join(' ').toLowerCase();
+                        if (!buscaCampos.includes(busca)) passa = false;
+                    }
+                    return passa;
+                });
+
+                tabelaHistorico.innerHTML = '';
+
+                if (filtrados.length === 0) {
+                    emptyState.style.display = 'block';
+                    tableWrapper.querySelector('table').style.display = 'none';
+                    return;
+                }
+
+                emptyState.style.display = 'none';
+                tableWrapper.querySelector('table').style.display = 'table';
+
+                filtrados.forEach((r) => {
+                    const idxReal = registros.indexOf(r);
+                    const tr = document.createElement('tr');
+                    const badgeClass = getStatusBadgeClass(r.andamento);
+                    const statusIcon = getStatusIcon(r.andamento);
+                    const tempoTotal = calcularTempoTotal(r);
+
+                    tr.innerHTML = `
+                        <td><strong>#${r.numRegistro}</strong></td>
+                        <td>${formatarData(r.dataOcorrencia)}</td>
+                        <td>${r.cliente}</td>
+                        <td>${r.areaEnvolvida || '-'}</td>
+                        <td>${r.origem === 'Interno' ? '🏭 Interno' : '🌐 Externo'}</td>
+                        <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${r.causaResumida}">${r.causaResumida || '-'}</td>
+                        <td><span class="badge ${badgeClass}">${statusIcon} ${r.andamento}</span></td>
+                        <td>${formatarDuracao(tempoTotal)}</td>
+                        <td>${formatarValor(r.valorNFD)}</td>
+                        <td>
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                <button class="btn btn-outline btn-sm" onclick="window.verDetalhes(${idxReal})" title="Ver detalhes">👁️</button>
+                                <button class="btn btn-warning btn-sm" onclick="window.editarRegistro(${idxReal})" title="Editar">✏️</button>
+                                <button class="btn btn-danger btn-sm" onclick="window.excluirRegistro(${idxReal})" title="Excluir">🗑️</button>
+                            </div>
+                        </td>
+                    `;
+                    tabelaHistorico.appendChild(tr);
+                });
+            }
+
+            // ==================== DASHBOARD ====================
+            function filtrarRegistrosDashboard() {
+                const dataFiltro = dashFiltroData.value;
+                const mesFiltro = dashFiltroMes.value;
+                return registros.filter(r => {
+                    let passa = true;
+                    if (dataFiltro && r.dataOcorrencia !== dataFiltro) passa = false;
+                    if (mesFiltro && !r.dataOcorrencia.startsWith(mesFiltro)) passa = false;
+                    return passa;
+                });
+            }
+
+            function renderizarDashboard() {
+                const dados = filtrarRegistrosDashboard();
+
+                const pendentes = dados.filter(r => r.andamento !== 'Concluído').length;
+                const concluidos = dados.filter(r => r.andamento === 'Concluído').length;
+                dashKpiPendentes.textContent = pendentes;
+                dashKpiConcluidos.textContent = concluidos;
+
+                const totalNC = dados.length;
+                const totalFaturado = dados.reduce((soma, r) => soma + (r.qtdFaturada || 0), 0);
+                const totalNFD = dados.reduce((soma, r) => soma + (r.valorNFD || 0), 0);
+
+                const concluidosList = dados.filter(r => r.andamento === 'Concluído');
+                let tempoMedioMs = 0;
+                if (concluidosList.length > 0) {
+                    const somaTempos = concluidosList.reduce((soma, r) => soma + calcularTempoTotal(r), 0);
+                    tempoMedioMs = somaTempos / concluidosList.length;
+                }
+
+                kpiTotalNC.textContent = totalNC;
+                kpiTotalFaturado.textContent = totalFaturado.toLocaleString('pt-BR');
+                kpiTotalNFD.textContent = formatarValor(totalNFD);
+                kpiTempoMedio.textContent = formatarDuracao(tempoMedioMs);
+
+                const materiaisMap = new Map();
+                dados.forEach(r => {
+                    const nome = r.descricaoProduto || r.codItem || 'Sem identificação';
+                    if (!materiaisMap.has(nome)) {
+                        materiaisMap.set(nome, { count: 0, valorNFD: 0 });
+                    }
+                    const m = materiaisMap.get(nome);
+                    m.count += 1;
+                    m.valorNFD += (r.valorNFD || 0);
+                });
+
+                const materiaisArray = Array.from(materiaisMap.entries())
+                    .sort((a, b) => b[1].count - a[1].count)
+                    .slice(0, 10);
+
+                materialList.innerHTML = '';
+                if (materiaisArray.length === 0) {
+                    materialList.innerHTML = '<li style="justify-content: center; color: var(--text-light);">Nenhum dado disponível</li>';
+                } else {
+                    materiaisArray.forEach(([nome, dadosMat]) => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <span class="material-name">${nome}</span>
+                            <span class="material-count">${dadosMat.count} ocorrência(s)</span>
+                            <span class="material-value">${formatarValor(dadosMat.valorNFD)}</span>
+                        `;
+                        materialList.appendChild(li);
+                    });
+                }
+
+                const areaMap = new Map();
+                dados.forEach(r => {
+                    const area = r.areaEnvolvida || 'Não informada';
+                    areaMap.set(area, (areaMap.get(area) || 0) + 1);
+                });
+                renderizarDistribuicao(distArea, areaMap);
+
+                const origemMap = new Map();
+                dados.forEach(r => {
+                    const origem = r.origem || 'Não informada';
+                    origemMap.set(origem, (origemMap.get(origem) || 0) + 1);
+                });
+                renderizarDistribuicao(distOrigem, origemMap);
+
+                const andamentoMap = new Map();
+                dados.forEach(r => {
+                    const and = r.andamento || 'Não informada';
+                    andamentoMap.set(and, (andamentoMap.get(and) || 0) + 1);
+                });
+                renderizarDistribuicao(distAndamento, andamentoMap);
+            }
+
+            function renderizarDistribuicao(container, mapa) {
+                container.innerHTML = '';
+                if (mapa.size === 0) {
+                    container.innerHTML = '<p style="color: var(--text-light);">Sem dados</p>';
+                    return;
+                }
+                const total = Array.from(mapa.values()).reduce((s, v) => s + v, 0);
+                const sorted = Array.from(mapa.entries()).sort((a, b) => b[1] - a[1]);
+                sorted.forEach(([label, count]) => {
+                    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                    const row = document.createElement('div');
+                    row.className = 'distribution-row';
+                    row.innerHTML = `
+                        <span class="distribution-label">${label}</span>
+                        <span class="distribution-count">${count} (${pct}%)</span>
+                    `;
+                    container.appendChild(row);
+                    const bar = document.createElement('div');
+                    bar.className = 'progress-bar';
+                    bar.innerHTML = `<div class="progress-fill" style="width: ${pct}%;"></div>`;
+                    container.appendChild(bar);
+                });
+            }
+
+            // ==================== CRUD ====================
+            function limparFormulario() {
+                form.reset();
+                numRegistroInput.value = '';
+                dataOcorrenciaInput.value = new Date().toISOString().split('T')[0];
+                setOrigemSelecionada('Interno');
+                popularSelectAndamento(false);
+                registroEmEdicao = null;
+                btnSalvar.innerHTML = '💾 Salvar Registro';
+                btnSalvar.className = 'btn btn-success';
+                areaEnvolvidaInput.focus();
+            }
+
+            function coletarDadosFormulario() {
+                return {
+                    numRegistro: numRegistroInput.value.trim(),
+                    cliente: clienteInput.value.trim(),
+                    dataOcorrencia: dataOcorrenciaInput.value,
+                    areaEnvolvida: areaEnvolvidaInput.value,
+                    origem: getOrigemSelecionada(),
+                    turno: turnoInput.value,
+                    causaResumida: causaResumidaInput.value.trim(),
+                    causaCompleta: causaCompletaInput.value.trim(),
+                    codItem: codItemInput.value.trim(),
+                    descricaoProduto: descricaoProdutoInput.value.trim(),
+                    qtdFaturada: qtdFaturadaInput.value ? parseInt(qtdFaturadaInput.value) : null,
+                    op: opInput.value.trim(),
+                    andamento: andamentoInput.value,
+                    solucaoProblema: solucaoProblemaInput.value.trim(),
+                    valorNFD: valorNFDInput.value ? parseFloat(valorNFDInput.value) : null,
+                };
+            }
+
+            function validarFormulario(dados) {
+                if (!dados.numRegistro) {
+                    mostrarToast('O campo "Nº Registro" é obrigatório!', 'error');
+                    numRegistroInput.focus();
+                    return false;
+                }
+                if (!dados.cliente) {
+                    mostrarToast('O campo "Cliente" é obrigatório!', 'error');
+                    clienteInput.focus();
+                    return false;
+                }
+                if (!dados.dataOcorrencia) {
+                    mostrarToast('O campo "Data da Ocorrência" é obrigatório!', 'error');
+                    dataOcorrenciaInput.focus();
+                    return false;
+                }
+                if (!dados.areaEnvolvida) {
+                    mostrarToast('O campo "Área Envolvida" é obrigatório!', 'error');
+                    areaEnvolvidaInput.focus();
+                    return false;
+                }
+                if (!dados.turno) {
+                    mostrarToast('O campo "Turno" é obrigatório!', 'error');
+                    turnoInput.focus();
+                    return false;
+                }
+                if (!dados.causaResumida) {
+                    mostrarToast('O campo "Causa Resumida" é obrigatório!', 'error');
+                    causaResumidaInput.focus();
+                    return false;
+                }
+                if (!dados.causaCompleta) {
+                    mostrarToast('O campo "Causa do Problema (Completo)" é obrigatório!', 'error');
+                    causaCompletaInput.focus();
+                    return false;
+                }
+                if (!dados.andamento) {
+                    mostrarToast('O campo "Andamento" é obrigatório!', 'error');
+                    andamentoInput.focus();
+                    return false;
+                }
+                return true;
+            }
+
+            function salvarRegistro(e) {
+                e.preventDefault();
+                const dados = coletarDadosFormulario();
+                if (!validarFormulario(dados)) return;
+
+                const agora = new Date().toISOString();
+
+                if (registroEmEdicao !== null) {
+                    const idx = registros.indexOf(registroEmEdicao);
+                    if (idx !== -1) {
+                        const original = registros[idx];
+                        const mudouAndamento = original.andamento !== dados.andamento;
+
+                        const novoRegistro = {
+                            ...dados,
+                            numRegistro: dados.numRegistro,
+                            dataAbertura: original.dataAbertura || agora,
+                            historicoEtapas: original.historicoEtapas ? [...original.historicoEtapas] : []
+                        };
+
+                        if (mudouAndamento) {
+                            novoRegistro.historicoEtapas.push({
+                                etapa: dados.andamento,
+                                timestamp: agora
+                            });
+                        }
+
+                        registros[idx] = novoRegistro;
+                        mostrarToast(`Registro #${dados.numRegistro} atualizado com sucesso!`, 'success');
+                    }
+                    registroEmEdicao = null;
+                    btnSalvar.innerHTML = '💾 Salvar Registro';
+                    btnSalvar.className = 'btn btn-success';
+                } else {
+                    const novoRegistro = {
+                        ...dados,
+                        dataAbertura: agora,
+                        historicoEtapas: [
+                            { etapa: 'Abertura da RNC', timestamp: agora }
+                        ]
+                    };
+                    registros.push(novoRegistro);
+                    mostrarToast(`Registro #${dados.numRegistro} salvo com sucesso!`, 'success');
+                }
+
+                salvarRegistros();
+                atualizarStats();
+                renderizarTabela();
+                limparFormulario();
+            }
+
+            function excluirRegistro(indiceReal) {
+                const registro = registros[indiceReal];
+                if (!registro) return;
+                if (confirm(`Tem certeza que deseja excluir o registro #${registro.numRegistro} do cliente ${registro.cliente}?`)) {
+                    registros.splice(indiceReal, 1);
+                    salvarRegistros();
+                    atualizarStats();
+                    renderizarTabela();
+                    fecharModal();
+                    mostrarToast(`Registro #${registro.numRegistro} excluído!`, 'success');
+                }
+            }
+
+            function editarRegistro(indiceReal) {
+                const registro = registros[indiceReal];
+                if (!registro) return;
+
+                registroEmEdicao = registro;
+
+                numRegistroInput.value = registro.numRegistro;
+                clienteInput.value = registro.cliente;
+                dataOcorrenciaInput.value = registro.dataOcorrencia;
+                areaEnvolvidaInput.value = registro.areaEnvolvida;
+                setOrigemSelecionada(registro.origem);
+                turnoInput.value = registro.turno;
+                causaResumidaInput.value = registro.causaResumida;
+                causaCompletaInput.value = registro.causaCompleta;
+                codItemInput.value = registro.codItem || '';
+                descricaoProdutoInput.value = registro.descricaoProduto || '';
+                qtdFaturadaInput.value = registro.qtdFaturada !== null && registro.qtdFaturada !== undefined ? registro
+                    .qtdFaturada : '';
+                opInput.value = registro.op || '';
+                popularSelectAndamento(true, registro.andamento);
+                solucaoProblemaInput.value = registro.solucaoProblema || '';
+                valorNFDInput.value = registro.valorNFD !== null && registro.valorNFD !== undefined ? registro
+                    .valorNFD : '';
+
+                btnSalvar.innerHTML = '✏️ Atualizar Registro';
+                btnSalvar.className = 'btn btn-warning';
+
+                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                fecharModal();
+                alternarAba('registro');
+                mostrarToast(`Editando registro #${registro.numRegistro}`, 'warning');
+            }
+
+            function verDetalhes(indiceReal) {
+                const registro = registros[indiceReal];
+                if (!registro) return;
+                registroSelecionado = registro;
+
+                const badgeClass = getStatusBadgeClass(registro.andamento);
+                const statusIcon = getStatusIcon(registro.andamento);
+                const tempoTotal = calcularTempoTotal(registro);
+
+                let htmlTimeline = '';
+                if (registro.historicoEtapas && registro.historicoEtapas.length > 0) {
+                    htmlTimeline = '<div class="timeline">';
+                    registro.historicoEtapas.forEach(etapa => {
+                        htmlTimeline += `
+                            <div class="timeline-item">
+                                <div class="etapa">${getStatusIcon(etapa.etapa)} ${etapa.etapa}</div>
+                                <div class="data">${formatarDataHora(etapa.timestamp)}</div>
+                            </div>
+                        `;
+                    });
+                    htmlTimeline += '</div>';
+                }
+
+                modalContent.innerHTML = `
+                    <div class="modal-detail-item"><div class="label">Nº Registro</div><div class="value">#${registro.numRegistro}</div></div>
+                    <div class="modal-detail-item"><div class="label">Cliente</div><div class="value">${registro.cliente}</div></div>
+                    <div class="modal-detail-item"><div class="label">Data da Ocorrência</div><div class="value">${formatarData(registro.dataOcorrencia)}</div></div>
+                    <div class="modal-detail-item"><div class="label">Área Envolvida</div><div class="value">${registro.areaEnvolvida || '-'}</div></div>
+                    <div class="modal-detail-item"><div class="label">Origem</div><div class="value">${registro.origem === 'Interno' ? '🏭 Interno' : '🌐 Externo'}</div></div>
+                    <div class="modal-detail-item"><div class="label">Turno</div><div class="value">${registro.turno || '-'}</div></div>
+                    <div class="modal-detail-item"><div class="label">Andamento</div><div class="value"><span class="badge ${badgeClass}">${statusIcon} ${registro.andamento}</span></div></div>
+                    <div class="modal-detail-item"><div class="label">Tempo Total</div><div class="value">${formatarDuracao(tempoTotal)}</div></div>
+                    <div class="modal-detail-item"><div class="label">Código do Item</div><div class="value">${registro.codItem || '-'}</div></div>
+                    <div class="modal-detail-item"><div class="label">Descrição do Produto</div><div class="value">${registro.descricaoProduto || '-'}</div></div>
+                    <div class="modal-detail-item"><div class="label">Quantidade Faturada</div><div class="value">${registro.qtdFaturada !== null && registro.qtdFaturada !== undefined ? registro.qtdFaturada : '-'}</div></div>
+                    <div class="modal-detail-item"><div class="label">OP</div><div class="value">${registro.op || '-'}</div></div>
+                    <div class="modal-detail-item"><div class="label">Valor da NFD</div><div class="value">${formatarValor(registro.valorNFD)}</div></div>
+                    <div class="modal-detail-item full"><div class="label">Causa Resumida</div><div class="value">${registro.causaResumida || '-'}</div></div>
+                    <div class="modal-detail-item full"><div class="label">Causa do Problema (Completo)</div><div class="value">${registro.causaCompleta || '-'}</div></div>
+                    <div class="modal-detail-item full"><div class="label">Solução do Problema</div><div class="value">${registro.solucaoProblema || 'Não informada'}</div></div>
+                    <div class="modal-detail-item full"><div class="label">Histórico de Etapas</div><div class="value">${htmlTimeline || 'Sem histórico'}</div></div>
+                `;
+
+                modalOverlay.classList.add('active');
+            }
+
+            function fecharModal() {
+                modalOverlay.classList.remove('active');
+                registroSelecionado = null;
+            }
+
+            // ==================== EVENTOS ====================
+            form.addEventListener('submit', salvarRegistro);
+
+            btnLimpar.addEventListener('click', () => {
+                limparFormulario();
+                mostrarToast('Formulário limpo!', 'warning');
+            });
+
+            btnLimparFiltros.addEventListener('click', () => {
+                filtroData.value = '';
+                filtroMes.value = '';
+                filtroBusca.value = '';
+                renderizarTabela();
+                mostrarToast('Filtros removidos!', 'warning');
+            });
+
+            filtroData.addEventListener('change', renderizarTabela);
+            filtroMes.addEventListener('change', renderizarTabela);
+            filtroBusca.addEventListener('input', renderizarTabela);
+
+            dashFiltroData.addEventListener('change', renderizarDashboard);
+            dashFiltroMes.addEventListener('change', renderizarDashboard);
+            btnLimparFiltrosDash.addEventListener('click', () => {
+                dashFiltroData.value = '';
+                dashFiltroMes.value = '';
+                renderizarDashboard();
+                mostrarToast('Filtros do dashboard removidos!', 'warning');
+            });
+
+            modalClose.addEventListener('click', fecharModal);
+            btnFecharModal.addEventListener('click', fecharModal);
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) fecharModal();
+            });
+
+            btnEditarDoModal.addEventListener('click', () => {
+                if (registroSelecionado) {
+                    const idx = registros.indexOf(registroSelecionado);
+                    if (idx !== -1) editarRegistro(idx);
+                }
+            });
+
+            btnExcluirDoModal.addEventListener('click', () => {
+                if (registroSelecionado) {
+                    const idx = registros.indexOf(registroSelecionado);
+                    if (idx !== -1) excluirRegistro(idx);
+                }
+            });
+
+            window.verDetalhes = function(indiceReal) { verDetalhes(indiceReal); };
+            window.editarRegistro = function(indiceReal) { editarRegistro(indiceReal); };
+            window.excluirRegistro = function(indiceReal) { excluirRegistro(indiceReal); };
+
+            // ==================== INICIALIZAÇÃO ====================
+            function iniciar() {
+                carregarRegistros();
+                atualizarStats();
+                numRegistroInput.value = '';
+                dataOcorrenciaInput.value = new Date().toISOString().split('T')[0];
+                setOrigemSelecionada('Interno');
+                popularSelectAndamento(false);
+                renderizarTabela();
+                renderizarDashboard();
+                alternarAba('registro');
+            }
+
+            iniciar();
+
+            console.log('✅ Sistema SAC Dona Rita Embalagens carregado com sucesso!');
+            console.log(`📦 ${registros.length} registro(s) carregado(s).`);
+        })();
+    </script>
+</body>
+</html>
