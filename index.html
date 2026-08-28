@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DONA RITA EMBALAGENS (SAC) - Sistema de Não Conformidades</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+    </script>
     <style>
-        /* ... (todo o CSS original permanece inalterado) ... */
         :root {
             --primary: #3C1053;
             --primary-light: #5B2A86;
@@ -36,7 +40,6 @@
             --glass-border: rgba(255, 255, 255, 0.15);
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
-        /* Restante do CSS permanece exatamente igual ao fornecido */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow-x: hidden; }
         body {
@@ -809,6 +812,20 @@
         ::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(180deg, #7C3AED 0%, #5B2A86 100%);
         }
+        .loading-indicator {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s ease infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -930,7 +947,6 @@
                         <div class="form-group">
                             <label class="form-label">Descrição do Produto</label>
                             <input type="text" class="form-input" id="descricaoProduto" placeholder="Descrição do produto" list="listaDescricaoProdutos">
-                            <!-- Datalist para autocompletar descrição -->
                             <datalist id="listaDescricaoProdutos"></datalist>
                         </div>
 
@@ -1105,18 +1121,34 @@
 
     <script>
         (function() {
+            // ==================== CONFIGURAÇÃO FIREBASE ====================
+            const firebaseConfig = {
+                apiKey: "AIzaSyDbrJvyDDTzlWQDs3_UejA-JI0lueQY1d8",
+                authDomain: "sacc-91ee3.firebaseapp.com",
+                projectId: "sacc-91ee3",
+                storageBucket: "sacc-91ee3.firebasestorage.app",
+                messagingSenderId: "898716969291",
+                appId: "1:898716969291:web:14fe249613244cb69520ce",
+                measurementId: "G-XQ68RJKM19"
+            };
+
+            // Inicializa Firebase
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            const COLLECTION_NAME = 'registros';
+
             // ==================== CONSTANTES E ESTADO ====================
-            const STORAGE_KEY = 'donaRitaSAC_registros';
             let registros = [];
             let registroEmEdicao = null;
             let registroSelecionado = null;
+            let isLoading = false;
 
             // Gráficos (referências para destruição)
             let chartArea = null;
             let chartProdutos = null;
             let chartMotivos = null;
             let chartStatus = null;
-            let chartValoresProdutos = null; // Novo gráfico
+            let chartValoresProdutos = null;
 
             // ==================== ELEMENTOS DOM ====================
             const form = document.getElementById('formNaoConformidade');
@@ -1163,19 +1195,16 @@
 
             const toastContainer = document.getElementById('toastContainer');
 
-            // Dashboard
             const dashFiltroData = document.getElementById('dashFiltroData');
             const dashFiltroMes = document.getElementById('dashFiltroMes');
             const btnLimparFiltrosDash = document.getElementById('btnLimparFiltrosDash');
 
-            // Canvas dos gráficos
             const canvasArea = document.getElementById('graficoArea');
             const canvasProdutos = document.getElementById('graficoProdutos');
             const canvasMotivos = document.getElementById('graficoMotivos');
             const canvasStatus = document.getElementById('graficoStatus');
-            const canvasValoresProdutos = document.getElementById('graficoValoresProdutos'); // Novo canvas
+            const canvasValoresProdutos = document.getElementById('graficoValoresProdutos');
 
-            // Abas
             const tabButtons = document.querySelectorAll('.tab-btn');
             const tabContents = document.querySelectorAll('.tab-content');
 
@@ -1276,7 +1305,6 @@
                 { codigo: '100216', descricao: 'DA 14 POTE' }
             ];
 
-            // Criar mapas de lookup normalizados
             const mapaCodigoParaDescricao = {};
             const mapaDescricaoParaCodigo = {};
             listaProdutos.forEach(item => {
@@ -1290,13 +1318,10 @@
                 return texto.trim().replace(/\s+/g, ' ');
             }
 
-            // ====== NOVO: Preencher datalist com descrições dos produtos ======
             function preencherDatalistDescricao() {
                 const datalist = document.getElementById('listaDescricaoProdutos');
                 if (datalist) {
-                    // Limpa opções existentes
                     datalist.innerHTML = '';
-                    // Adiciona cada descrição como <option>
                     listaProdutos.forEach(item => {
                         const option = document.createElement('option');
                         option.value = item.descricao;
@@ -1398,18 +1423,37 @@
                 }, 3200);
             }
 
-            function carregarRegistros() {
+            function setLoadingState(loading) {
+                isLoading = loading;
+                if (loading) {
+                    btnSalvar.disabled = true;
+                    btnSalvar.innerHTML = '<span class="loading-indicator"></span> Salvando...';
+                } else {
+                    btnSalvar.disabled = false;
+                    if (registroEmEdicao !== null) {
+                        btnSalvar.innerHTML = '✏️ Atualizar Registro';
+                    } else {
+                        btnSalvar.innerHTML = '💾 Salvar Registro';
+                    }
+                }
+            }
+
+            // ==================== FUNÇÕES FIREBASE ====================
+            async function carregarRegistrosDoFirebase() {
                 try {
-                    const dados = localStorage.getItem(STORAGE_KEY);
-                    registros = dados ? JSON.parse(dados) : [];
-                    // Garante que campos novos existam para registros antigos
-                    registros.forEach(r => {
-                        if (r.bonificacao === undefined) r.bonificacao = null;
-                        if (r.valorTotal === undefined) {
-                            const nfd = parseFloat(r.valorNFD) || 0;
-                            const bonif = parseFloat(r.bonificacao) || 0;
-                            r.valorTotal = (nfd + bonif) || null;
+                    const querySnapshot = await db.collection(COLLECTION_NAME).get();
+                    registros = [];
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        data.docId = doc.id;
+                        // Garante que campos novos existam
+                        if (data.bonificacao === undefined) data.bonificacao = null;
+                        if (data.valorTotal === undefined) {
+                            const nfd = parseFloat(data.valorNFD) || 0;
+                            const bonif = parseFloat(data.bonificacao) || 0;
+                            data.valorTotal = (nfd + bonif) || null;
                         }
+                        registros.push(data);
                     });
                     registros.sort((a, b) => {
                         const numA = parseInt(a.numRegistro) || 0;
@@ -1417,20 +1461,39 @@
                         return numB - numA;
                     });
                 } catch (e) {
-                    console.error('Erro ao carregar registros:', e);
+                    console.error('Erro ao carregar do Firebase:', e);
                     registros = [];
+                    throw e;
                 }
             }
 
-            function salvarRegistros() {
+            async function salvarRegistroNoFirebase(dados, docId = null) {
                 try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(registros));
+                    if (docId) {
+                        // Atualizar documento existente
+                        await db.collection(COLLECTION_NAME).doc(docId).update(dados);
+                        return docId;
+                    } else {
+                        // Criar novo documento
+                        const docRef = await db.collection(COLLECTION_NAME).add(dados);
+                        return docRef.id;
+                    }
                 } catch (e) {
-                    console.error('Erro ao salvar registros:', e);
-                    mostrarToast('Erro ao salvar dados!', 'error');
+                    console.error('Erro ao salvar no Firebase:', e);
+                    throw e;
                 }
             }
 
+            async function excluirRegistroDoFirebase(docId) {
+                try {
+                    await db.collection(COLLECTION_NAME).doc(docId).delete();
+                } catch (e) {
+                    console.error('Erro ao excluir do Firebase:', e);
+                    throw e;
+                }
+            }
+
+            // ==================== CRUD ====================
             function atualizarStats() {
                 statTotal.textContent = registros.length;
                 const pendentes = registros.filter(r => r.andamento !== 'Concluído').length;
@@ -1493,27 +1556,260 @@
                 valorTotalInput.value = total.toFixed(2);
             }
 
-            // ==================== ABAS ====================
-            function alternarAba(tabId) {
-                tabButtons.forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.tab === tabId);
-                });
-                tabContents.forEach(content => {
-                    content.classList.toggle('active', content.id === `tab-${tabId}`);
-                });
-                if (tabId === 'dashboard') {
-                    renderizarDashboard();
+            function limparFormulario() {
+                form.reset();
+                numRegistroInput.value = '';
+                dataOcorrenciaInput.value = new Date().toISOString().split('T')[0];
+                setOrigemSelecionada('Interno');
+                popularSelectAndamento(false);
+                valorNFDInput.value = '';
+                bonificacaoInput.value = '';
+                valorTotalInput.value = '';
+                codItemInput.value = '';
+                descricaoProdutoInput.value = '';
+                registroEmEdicao = null;
+                btnSalvar.innerHTML = '💾 Salvar Registro';
+                btnSalvar.className = 'btn btn-success';
+                btnSalvar.disabled = false;
+                areaEnvolvidaInput.focus();
+            }
+
+            function coletarDadosFormulario() {
+                return {
+                    numRegistro: numRegistroInput.value.trim(),
+                    cliente: clienteInput.value.trim(),
+                    dataOcorrencia: dataOcorrenciaInput.value,
+                    areaEnvolvida: areaEnvolvidaInput.value,
+                    origem: getOrigemSelecionada(),
+                    turno: turnoInput.value,
+                    causaResumida: causaResumidaInput.value.trim(),
+                    causaCompleta: causaCompletaInput.value.trim(),
+                    codItem: codItemInput.value.trim(),
+                    descricaoProduto: descricaoProdutoInput.value.trim(),
+                    qtdFaturada: qtdFaturadaInput.value ? parseInt(qtdFaturadaInput.value) : null,
+                    op: opInput.value.trim(),
+                    andamento: andamentoInput.value,
+                    solucaoProblema: solucaoProblemaInput.value.trim(),
+                    valorNFD: valorNFDInput.value ? parseFloat(valorNFDInput.value) : null,
+                    bonificacao: bonificacaoInput.value ? parseFloat(bonificacaoInput.value) : null,
+                    valorTotal: valorTotalInput.value ? parseFloat(valorTotalInput.value) : null,
+                };
+            }
+
+            function validarFormulario(dados) {
+                if (!dados.numRegistro) {
+                    mostrarToast('O campo "Nº Registro" é obrigatório!', 'error');
+                    numRegistroInput.focus();
+                    return false;
                 }
-                if (tabId === 'historico') {
+                if (!dados.cliente) {
+                    mostrarToast('O campo "Cliente" é obrigatório!', 'error');
+                    clienteInput.focus();
+                    return false;
+                }
+                if (!dados.dataOcorrencia) {
+                    mostrarToast('O campo "Data da Ocorrência" é obrigatório!', 'error');
+                    dataOcorrenciaInput.focus();
+                    return false;
+                }
+                if (!dados.areaEnvolvida) {
+                    mostrarToast('O campo "Área Envolvida" é obrigatório!', 'error');
+                    areaEnvolvidaInput.focus();
+                    return false;
+                }
+                if (!dados.turno) {
+                    mostrarToast('O campo "Turno" é obrigatório!', 'error');
+                    turnoInput.focus();
+                    return false;
+                }
+                if (!dados.causaResumida) {
+                    mostrarToast('O campo "Causa Resumida" é obrigatório!', 'error');
+                    causaResumidaInput.focus();
+                    return false;
+                }
+                if (!dados.causaCompleta) {
+                    mostrarToast('O campo "Causa do Problema (Completo)" é obrigatório!', 'error');
+                    causaCompletaInput.focus();
+                    return false;
+                }
+                if (!dados.andamento) {
+                    mostrarToast('O campo "Andamento" é obrigatório!', 'error');
+                    andamentoInput.focus();
+                    return false;
+                }
+                return true;
+            }
+
+            async function salvarRegistro(e) {
+                e.preventDefault();
+                if (isLoading) return;
+
+                const dados = coletarDadosFormulario();
+                if (!validarFormulario(dados)) return;
+
+                const agora = new Date().toISOString();
+                setLoadingState(true);
+
+                try {
+                    if (registroEmEdicao !== null) {
+                        // Atualizar registro existente
+                        const idx = registros.indexOf(registroEmEdicao);
+                        if (idx !== -1) {
+                            const original = registros[idx];
+                            const mudouAndamento = original.andamento !== dados.andamento;
+
+                            const dadosParaSalvar = {
+                                ...dados,
+                                dataAbertura: original.dataAbertura || agora,
+                                historicoEtapas: original.historicoEtapas ? [...original.historicoEtapas] : []
+                            };
+
+                            if (mudouAndamento) {
+                                dadosParaSalvar.historicoEtapas.push({
+                                    etapa: dados.andamento,
+                                    timestamp: agora
+                                });
+                            }
+
+                            await salvarRegistroNoFirebase(dadosParaSalvar, original.docId);
+                            mostrarToast(`Registro #${dados.numRegistro} atualizado com sucesso!`, 'success');
+                        }
+                        registroEmEdicao = null;
+                    } else {
+                        // Criar novo registro
+                        const novoRegistro = {
+                            ...dados,
+                            dataAbertura: agora,
+                            historicoEtapas: [
+                                { etapa: 'Abertura da RNC', timestamp: agora }
+                            ]
+                        };
+                        await salvarRegistroNoFirebase(novoRegistro);
+                        mostrarToast(`Registro #${dados.numRegistro} salvo com sucesso!`, 'success');
+                    }
+
+                    // Recarregar do Firebase
+                    await carregarRegistrosDoFirebase();
+                    atualizarStats();
                     renderizarTabela();
+                    limparFormulario();
+                } catch (e) {
+                    mostrarToast('Erro ao salvar no Firebase! Verifique sua conexão.', 'error');
+                } finally {
+                    setLoadingState(false);
                 }
             }
 
-            tabButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    alternarAba(btn.dataset.tab);
-                });
-            });
+            async function excluirRegistro(indiceReal) {
+                const registro = registros[indiceReal];
+                if (!registro) return;
+                if (confirm(`Tem certeza que deseja excluir o registro #${registro.numRegistro} do cliente ${registro.cliente}?`)) {
+                    try {
+                        if (registro.docId) {
+                            await excluirRegistroDoFirebase(registro.docId);
+                        }
+                        registros.splice(indiceReal, 1);
+                        atualizarStats();
+                        renderizarTabela();
+                        fecharModal();
+                        mostrarToast(`Registro #${registro.numRegistro} excluído!`, 'success');
+                    } catch (e) {
+                        mostrarToast('Erro ao excluir do Firebase!', 'error');
+                    }
+                }
+            }
+
+            function editarRegistro(indiceReal) {
+                const registro = registros[indiceReal];
+                if (!registro) return;
+
+                registroEmEdicao = registro;
+
+                numRegistroInput.value = registro.numRegistro;
+                clienteInput.value = registro.cliente;
+                dataOcorrenciaInput.value = registro.dataOcorrencia;
+                areaEnvolvidaInput.value = registro.areaEnvolvida;
+                setOrigemSelecionada(registro.origem);
+                turnoInput.value = registro.turno;
+                causaResumidaInput.value = registro.causaResumida;
+                causaCompletaInput.value = registro.causaCompleta;
+                codItemInput.value = registro.codItem || '';
+                descricaoProdutoInput.value = registro.descricaoProduto || '';
+                qtdFaturadaInput.value = registro.qtdFaturada !== null && registro.qtdFaturada !== undefined ? registro
+                    .qtdFaturada : '';
+                opInput.value = registro.op || '';
+                popularSelectAndamento(true, registro.andamento);
+                solucaoProblemaInput.value = registro.solucaoProblema || '';
+                valorNFDInput.value = registro.valorNFD !== null && registro.valorNFD !== undefined ? registro
+                    .valorNFD : '';
+                bonificacaoInput.value = registro.bonificacao !== null && registro.bonificacao !== undefined ? registro
+                    .bonificacao : '';
+                atualizarValorTotal();
+
+                btnSalvar.innerHTML = '✏️ Atualizar Registro';
+                btnSalvar.className = 'btn btn-warning';
+                btnSalvar.disabled = false;
+
+                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                fecharModal();
+                alternarAba('registro');
+                mostrarToast(`Editando registro #${registro.numRegistro}`, 'warning');
+            }
+
+            function verDetalhes(indiceReal) {
+                const registro = registros[indiceReal];
+                if (!registro) return;
+                registroSelecionado = registro;
+
+                const badgeClass = getStatusBadgeClass(registro.andamento);
+                const statusIcon = getStatusIcon(registro.andamento);
+                const tempoTotal = calcularTempoTotal(registro);
+                const valorTotal = registro.valorTotal !== null && registro.valorTotal !== undefined ? registro
+                    .valorTotal : (parseFloat(registro.valorNFD) || 0) + (parseFloat(registro.bonificacao) || 0);
+
+                let htmlTimeline = '';
+                if (registro.historicoEtapas && registro.historicoEtapas.length > 0) {
+                    htmlTimeline = '<div class="timeline">';
+                    registro.historicoEtapas.forEach(etapa => {
+                        htmlTimeline += `
+                            <div class="timeline-item">
+                                <div class="etapa">${getStatusIcon(etapa.etapa)} ${etapa.etapa}</div>
+                                <div class="data">${formatarDataHora(etapa.timestamp)}</div>
+                            </div>
+                        `;
+                    });
+                    htmlTimeline += '</div>';
+                }
+
+                modalContent.innerHTML = `
+                    <div class="modal-detail-item"><div class="label">Nº Registro</div><div class="value">#${registro.numRegistro}</div></div>
+                    <div class="modal-detail-item"><div class="label">Cliente</div><div class="value">${registro.cliente}</div></div>
+                    <div class="modal-detail-item"><div class="label">Data da Ocorrência</div><div class="value">${formatarData(registro.dataOcorrencia)}</div></div>
+                    <div class="modal-detail-item"><div class="label">Área Envolvida</div><div class="value">${registro.areaEnvolvida || '-'}</div></div>
+                    <div class="modal-detail-item"><div class="label">Origem</div><div class="value">${registro.origem === 'Interno' ? '🏭 Interno' : '🌐 Externo'}</div></div>
+                    <div class="modal-detail-item"><div class="label">Turno</div><div class="value">${registro.turno || '-'}</div></div>
+                    <div class="modal-detail-item"><div class="label">Andamento</div><div class="value"><span class="badge ${badgeClass}">${statusIcon} ${registro.andamento}</span></div></div>
+                    <div class="modal-detail-item"><div class="label">Tempo Total</div><div class="value">${formatarDuracao(tempoTotal)}</div></div>
+                    <div class="modal-detail-item"><div class="label">Código do Item</div><div class="value">${registro.codItem || '-'}</div></div>
+                    <div class="modal-detail-item"><div class="label">Descrição do Produto</div><div class="value">${registro.descricaoProduto || '-'}</div></div>
+                    <div class="modal-detail-item"><div class="label">Quantidade Faturada</div><div class="value">${registro.qtdFaturada !== null && registro.qtdFaturada !== undefined ? registro.qtdFaturada : '-'}</div></div>
+                    <div class="modal-detail-item"><div class="label">OP</div><div class="value">${registro.op || '-'}</div></div>
+                    <div class="modal-detail-item"><div class="label">Valor da NFD</div><div class="value">${formatarValor(registro.valorNFD)}</div></div>
+                    <div class="modal-detail-item"><div class="label">Bonificação</div><div class="value">${formatarValor(registro.bonificacao)}</div></div>
+                    <div class="modal-detail-item"><div class="label">Valor Total</div><div class="value">${formatarValor(valorTotal)}</div></div>
+                    <div class="modal-detail-item full"><div class="label">Causa Resumida</div><div class="value">${registro.causaResumida || '-'}</div></div>
+                    <div class="modal-detail-item full"><div class="label">Causa do Problema (Completo)</div><div class="value">${registro.causaCompleta || '-'}</div></div>
+                    <div class="modal-detail-item full"><div class="label">Solução do Problema</div><div class="value">${registro.solucaoProblema || 'Não informada'}</div></div>
+                    <div class="modal-detail-item full"><div class="label">Histórico de Etapas</div><div class="value">${htmlTimeline || 'Sem histórico'}</div></div>
+                `;
+
+                modalOverlay.classList.add('active');
+            }
+
+            function fecharModal() {
+                modalOverlay.classList.remove('active');
+                registroSelecionado = null;
+            }
 
             // ==================== RENDERIZAÇÃO DA TABELA ====================
             function renderizarTabela() {
@@ -1608,7 +1904,6 @@
                 destruirGraficos();
                 const dados = filtrarRegistrosDashboard();
 
-                // 1. Ocorrência por Área
                 const areaMap = new Map();
                 dados.forEach(r => {
                     const area = r.areaEnvolvida || 'Não informada';
@@ -1643,7 +1938,6 @@
                     });
                 }
 
-                // 2. Quantidades Reclamadas por Produto (contagem de ocorrências por produto)
                 const produtoMap = new Map();
                 dados.forEach(r => {
                     const nome = r.descricaoProduto || r.codItem || 'Sem identificação';
@@ -1678,7 +1972,6 @@
                     });
                 }
 
-                // 3. Motivos de Ocorrência Resumida (causa resumida)
                 const motivoMap = new Map();
                 dados.forEach(r => {
                     const motivo = r.causaResumida || 'Não informado';
@@ -1716,7 +2009,6 @@
                     });
                 }
 
-                // 4. Ocorrências Abertas vs Concluídas
                 const abertas = dados.filter(r => r.andamento !== 'Concluído').length;
                 const concluidas = dados.filter(r => r.andamento === 'Concluído').length;
                 const ctxStatus = canvasStatus.getContext('2d');
@@ -1744,7 +2036,6 @@
                     }
                 });
 
-                // 5. NOVO: Valores de Devolução + Bonificação por Produto
                 const valoresMap = new Map();
                 dados.forEach(r => {
                     const produto = r.descricaoProduto || r.codItem || 'Sem identificação';
@@ -1791,244 +2082,27 @@
                 }
             }
 
-            // ==================== CRUD ====================
-            function limparFormulario() {
-                form.reset();
-                numRegistroInput.value = '';
-                dataOcorrenciaInput.value = new Date().toISOString().split('T')[0];
-                setOrigemSelecionada('Interno');
-                popularSelectAndamento(false);
-                valorNFDInput.value = '';
-                bonificacaoInput.value = '';
-                valorTotalInput.value = '';
-                codItemInput.value = '';
-                descricaoProdutoInput.value = '';
-                registroEmEdicao = null;
-                btnSalvar.innerHTML = '💾 Salvar Registro';
-                btnSalvar.className = 'btn btn-success';
-                areaEnvolvidaInput.focus();
-            }
-
-            function coletarDadosFormulario() {
-                return {
-                    numRegistro: numRegistroInput.value.trim(),
-                    cliente: clienteInput.value.trim(),
-                    dataOcorrencia: dataOcorrenciaInput.value,
-                    areaEnvolvida: areaEnvolvidaInput.value,
-                    origem: getOrigemSelecionada(),
-                    turno: turnoInput.value,
-                    causaResumida: causaResumidaInput.value.trim(),
-                    causaCompleta: causaCompletaInput.value.trim(),
-                    codItem: codItemInput.value.trim(),
-                    descricaoProduto: descricaoProdutoInput.value.trim(),
-                    qtdFaturada: qtdFaturadaInput.value ? parseInt(qtdFaturadaInput.value) : null,
-                    op: opInput.value.trim(),
-                    andamento: andamentoInput.value,
-                    solucaoProblema: solucaoProblemaInput.value.trim(),
-                    valorNFD: valorNFDInput.value ? parseFloat(valorNFDInput.value) : null,
-                    bonificacao: bonificacaoInput.value ? parseFloat(bonificacaoInput.value) : null,
-                    valorTotal: valorTotalInput.value ? parseFloat(valorTotalInput.value) : null,
-                };
-            }
-
-            function validarFormulario(dados) {
-                if (!dados.numRegistro) {
-                    mostrarToast('O campo "Nº Registro" é obrigatório!', 'error');
-                    numRegistroInput.focus();
-                    return false;
+            // ==================== ABAS ====================
+            function alternarAba(tabId) {
+                tabButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.tab === tabId);
+                });
+                tabContents.forEach(content => {
+                    content.classList.toggle('active', content.id === `tab-${tabId}`);
+                });
+                if (tabId === 'dashboard') {
+                    renderizarDashboard();
                 }
-                if (!dados.cliente) {
-                    mostrarToast('O campo "Cliente" é obrigatório!', 'error');
-                    clienteInput.focus();
-                    return false;
-                }
-                if (!dados.dataOcorrencia) {
-                    mostrarToast('O campo "Data da Ocorrência" é obrigatório!', 'error');
-                    dataOcorrenciaInput.focus();
-                    return false;
-                }
-                if (!dados.areaEnvolvida) {
-                    mostrarToast('O campo "Área Envolvida" é obrigatório!', 'error');
-                    areaEnvolvidaInput.focus();
-                    return false;
-                }
-                if (!dados.turno) {
-                    mostrarToast('O campo "Turno" é obrigatório!', 'error');
-                    turnoInput.focus();
-                    return false;
-                }
-                if (!dados.causaResumida) {
-                    mostrarToast('O campo "Causa Resumida" é obrigatório!', 'error');
-                    causaResumidaInput.focus();
-                    return false;
-                }
-                if (!dados.causaCompleta) {
-                    mostrarToast('O campo "Causa do Problema (Completo)" é obrigatório!', 'error');
-                    causaCompletaInput.focus();
-                    return false;
-                }
-                if (!dados.andamento) {
-                    mostrarToast('O campo "Andamento" é obrigatório!', 'error');
-                    andamentoInput.focus();
-                    return false;
-                }
-                return true;
-            }
-
-            function salvarRegistro(e) {
-                e.preventDefault();
-                const dados = coletarDadosFormulario();
-                if (!validarFormulario(dados)) return;
-
-                const agora = new Date().toISOString();
-
-                if (registroEmEdicao !== null) {
-                    const idx = registros.indexOf(registroEmEdicao);
-                    if (idx !== -1) {
-                        const original = registros[idx];
-                        const mudouAndamento = original.andamento !== dados.andamento;
-
-                        const novoRegistro = {
-                            ...dados,
-                            numRegistro: dados.numRegistro,
-                            dataAbertura: original.dataAbertura || agora,
-                            historicoEtapas: original.historicoEtapas ? [...original.historicoEtapas] : []
-                        };
-
-                        if (mudouAndamento) {
-                            novoRegistro.historicoEtapas.push({
-                                etapa: dados.andamento,
-                                timestamp: agora
-                            });
-                        }
-
-                        registros[idx] = novoRegistro;
-                        mostrarToast(`Registro #${dados.numRegistro} atualizado com sucesso!`, 'success');
-                    }
-                    registroEmEdicao = null;
-                    btnSalvar.innerHTML = '💾 Salvar Registro';
-                    btnSalvar.className = 'btn btn-success';
-                } else {
-                    const novoRegistro = {
-                        ...dados,
-                        dataAbertura: agora,
-                        historicoEtapas: [
-                            { etapa: 'Abertura da RNC', timestamp: agora }
-                        ]
-                    };
-                    registros.push(novoRegistro);
-                    mostrarToast(`Registro #${dados.numRegistro} salvo com sucesso!`, 'success');
-                }
-
-                salvarRegistros();
-                atualizarStats();
-                renderizarTabela();
-                limparFormulario();
-            }
-
-            function excluirRegistro(indiceReal) {
-                const registro = registros[indiceReal];
-                if (!registro) return;
-                if (confirm(`Tem certeza que deseja excluir o registro #${registro.numRegistro} do cliente ${registro.cliente}?`)) {
-                    registros.splice(indiceReal, 1);
-                    salvarRegistros();
-                    atualizarStats();
+                if (tabId === 'historico') {
                     renderizarTabela();
-                    fecharModal();
-                    mostrarToast(`Registro #${registro.numRegistro} excluído!`, 'success');
                 }
             }
 
-            function editarRegistro(indiceReal) {
-                const registro = registros[indiceReal];
-                if (!registro) return;
-
-                registroEmEdicao = registro;
-
-                numRegistroInput.value = registro.numRegistro;
-                clienteInput.value = registro.cliente;
-                dataOcorrenciaInput.value = registro.dataOcorrencia;
-                areaEnvolvidaInput.value = registro.areaEnvolvida;
-                setOrigemSelecionada(registro.origem);
-                turnoInput.value = registro.turno;
-                causaResumidaInput.value = registro.causaResumida;
-                causaCompletaInput.value = registro.causaCompleta;
-                codItemInput.value = registro.codItem || '';
-                descricaoProdutoInput.value = registro.descricaoProduto || '';
-                qtdFaturadaInput.value = registro.qtdFaturada !== null && registro.qtdFaturada !== undefined ? registro
-                    .qtdFaturada : '';
-                opInput.value = registro.op || '';
-                popularSelectAndamento(true, registro.andamento);
-                solucaoProblemaInput.value = registro.solucaoProblema || '';
-                valorNFDInput.value = registro.valorNFD !== null && registro.valorNFD !== undefined ? registro
-                    .valorNFD : '';
-                bonificacaoInput.value = registro.bonificacao !== null && registro.bonificacao !== undefined ? registro
-                    .bonificacao : '';
-                atualizarValorTotal();
-
-                btnSalvar.innerHTML = '✏️ Atualizar Registro';
-                btnSalvar.className = 'btn btn-warning';
-
-                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                fecharModal();
-                alternarAba('registro');
-                mostrarToast(`Editando registro #${registro.numRegistro}`, 'warning');
-            }
-
-            function verDetalhes(indiceReal) {
-                const registro = registros[indiceReal];
-                if (!registro) return;
-                registroSelecionado = registro;
-
-                const badgeClass = getStatusBadgeClass(registro.andamento);
-                const statusIcon = getStatusIcon(registro.andamento);
-                const tempoTotal = calcularTempoTotal(registro);
-                const valorTotal = registro.valorTotal !== null && registro.valorTotal !== undefined ? registro
-                    .valorTotal : (parseFloat(registro.valorNFD) || 0) + (parseFloat(registro.bonificacao) || 0);
-
-                let htmlTimeline = '';
-                if (registro.historicoEtapas && registro.historicoEtapas.length > 0) {
-                    htmlTimeline = '<div class="timeline">';
-                    registro.historicoEtapas.forEach(etapa => {
-                        htmlTimeline += `
-                            <div class="timeline-item">
-                                <div class="etapa">${getStatusIcon(etapa.etapa)} ${etapa.etapa}</div>
-                                <div class="data">${formatarDataHora(etapa.timestamp)}</div>
-                            </div>
-                        `;
-                    });
-                    htmlTimeline += '</div>';
-                }
-
-                modalContent.innerHTML = `
-                    <div class="modal-detail-item"><div class="label">Nº Registro</div><div class="value">#${registro.numRegistro}</div></div>
-                    <div class="modal-detail-item"><div class="label">Cliente</div><div class="value">${registro.cliente}</div></div>
-                    <div class="modal-detail-item"><div class="label">Data da Ocorrência</div><div class="value">${formatarData(registro.dataOcorrencia)}</div></div>
-                    <div class="modal-detail-item"><div class="label">Área Envolvida</div><div class="value">${registro.areaEnvolvida || '-'}</div></div>
-                    <div class="modal-detail-item"><div class="label">Origem</div><div class="value">${registro.origem === 'Interno' ? '🏭 Interno' : '🌐 Externo'}</div></div>
-                    <div class="modal-detail-item"><div class="label">Turno</div><div class="value">${registro.turno || '-'}</div></div>
-                    <div class="modal-detail-item"><div class="label">Andamento</div><div class="value"><span class="badge ${badgeClass}">${statusIcon} ${registro.andamento}</span></div></div>
-                    <div class="modal-detail-item"><div class="label">Tempo Total</div><div class="value">${formatarDuracao(tempoTotal)}</div></div>
-                    <div class="modal-detail-item"><div class="label">Código do Item</div><div class="value">${registro.codItem || '-'}</div></div>
-                    <div class="modal-detail-item"><div class="label">Descrição do Produto</div><div class="value">${registro.descricaoProduto || '-'}</div></div>
-                    <div class="modal-detail-item"><div class="label">Quantidade Faturada</div><div class="value">${registro.qtdFaturada !== null && registro.qtdFaturada !== undefined ? registro.qtdFaturada : '-'}</div></div>
-                    <div class="modal-detail-item"><div class="label">OP</div><div class="value">${registro.op || '-'}</div></div>
-                    <div class="modal-detail-item"><div class="label">Valor da NFD</div><div class="value">${formatarValor(registro.valorNFD)}</div></div>
-                    <div class="modal-detail-item"><div class="label">Bonificação</div><div class="value">${formatarValor(registro.bonificacao)}</div></div>
-                    <div class="modal-detail-item"><div class="label">Valor Total</div><div class="value">${formatarValor(valorTotal)}</div></div>
-                    <div class="modal-detail-item full"><div class="label">Causa Resumida</div><div class="value">${registro.causaResumida || '-'}</div></div>
-                    <div class="modal-detail-item full"><div class="label">Causa do Problema (Completo)</div><div class="value">${registro.causaCompleta || '-'}</div></div>
-                    <div class="modal-detail-item full"><div class="label">Solução do Problema</div><div class="value">${registro.solucaoProblema || 'Não informada'}</div></div>
-                    <div class="modal-detail-item full"><div class="label">Histórico de Etapas</div><div class="value">${htmlTimeline || 'Sem histórico'}</div></div>
-                `;
-
-                modalOverlay.classList.add('active');
-            }
-
-            function fecharModal() {
-                modalOverlay.classList.remove('active');
-                registroSelecionado = null;
-            }
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    alternarAba(btn.dataset.tab);
+                });
+            });
 
             // ==================== EVENTOS ====================
             form.addEventListener('submit', salvarRegistro);
@@ -2059,7 +2133,6 @@
                 mostrarToast('Filtros do dashboard removidos!', 'warning');
             });
 
-            // Atualização automática do valor total
             valorNFDInput.addEventListener('input', atualizarValorTotal);
             bonificacaoInput.addEventListener('input', atualizarValorTotal);
 
@@ -2069,11 +2142,9 @@
                 if (codigoDigitado && mapaCodigoParaDescricao[codigoDigitado]) {
                     descricaoProdutoInput.value = mapaCodigoParaDescricao[codigoDigitado];
                 } else {
-                    // Se o código não corresponder, limpa a descrição apenas se estiver vazia ou preenchida automaticamente
                     const descricaoAtual = descricaoProdutoInput.value.trim();
-                    if (descricaoAtual && !mapaDescricaoParaCodigo[normalizarTexto(descricaoAtual)]) {
-                        // Não limpa se o usuário digitou algo manualmente na descrição
-                    } else if (descricaoAtual && mapaDescricaoParaCodigo[normalizarTexto(descricaoAtual)] && codigoDigitado !== mapaDescricaoParaCodigo[normalizarTexto(descricaoAtual)]) {
+                    if (descricaoAtual && mapaDescricaoParaCodigo[normalizarTexto(descricaoAtual)] && codigoDigitado !==
+                        mapaDescricaoParaCodigo[normalizarTexto(descricaoAtual)]) {
                         descricaoProdutoInput.value = '';
                     }
                 }
@@ -2085,9 +2156,8 @@
                     codItemInput.value = mapaDescricaoParaCodigo[descricaoDigitada];
                 } else {
                     const codigoAtual = codItemInput.value.trim();
-                    if (codigoAtual && !mapaCodigoParaDescricao[codigoAtual]) {
-                        // Não limpa se o usuário digitou algo manualmente no código
-                    } else if (codigoAtual && mapaCodigoParaDescricao[codigoAtual] && descricaoDigitada !== mapaCodigoParaDescricao[codigoAtual]) {
+                    if (codigoAtual && mapaCodigoParaDescricao[codigoAtual] && descricaoDigitada !== mapaCodigoParaDescricao[
+                            codigoAtual]) {
                         codItemInput.value = '';
                     }
                 }
@@ -2118,30 +2188,38 @@
             window.excluirRegistro = function(indiceReal) { excluirRegistro(indiceReal); };
 
             // ==================== INICIALIZAÇÃO ====================
-            function iniciar() {
-                carregarRegistros();
-                atualizarStats();
-                numRegistroInput.value = '';
-                dataOcorrenciaInput.value = new Date().toISOString().split('T')[0];
-                setOrigemSelecionada('Interno');
-                popularSelectAndamento(false);
-                valorNFDInput.value = '';
-                bonificacaoInput.value = '';
-                valorTotalInput.value = '';
-                codItemInput.value = '';
-                descricaoProdutoInput.value = '';
-                // Preenche o datalist
-                preencherDatalistDescricao();
-                renderizarTabela();
-                renderizarDashboard();
-                alternarAba('registro');
+            async function iniciar() {
+                try {
+                    await carregarRegistrosDoFirebase();
+                    atualizarStats();
+                    numRegistroInput.value = '';
+                    dataOcorrenciaInput.value = new Date().toISOString().split('T')[0];
+                    setOrigemSelecionada('Interno');
+                    popularSelectAndamento(false);
+                    valorNFDInput.value = '';
+                    bonificacaoInput.value = '';
+                    valorTotalInput.value = '';
+                    codItemInput.value = '';
+                    descricaoProdutoInput.value = '';
+                    preencherDatalistDescricao();
+                    renderizarTabela();
+                    renderizarDashboard();
+                    alternarAba('registro');
+                    console.log('✅ Sistema SAC Dona Rita Embalagens carregado com sucesso!');
+                    console.log(`📦 ${registros.length} registro(s) carregado(s) do Firebase.`);
+                } catch (e) {
+                    console.error('❌ Erro ao carregar do Firebase:', e);
+                    mostrarToast('Erro ao carregar dados do Firebase! Verifique sua conexão.', 'error');
+                    // Carrega vazio
+                    registros = [];
+                    atualizarStats();
+                    preencherDatalistDescricao();
+                    renderizarTabela();
+                    renderizarDashboard();
+                }
             }
 
             iniciar();
-
-            console.log('✅ Sistema SAC Dona Rita Embalagens carregado com sucesso!');
-            console.log(`📦 ${registros.length} registro(s) carregado(s).`);
-            console.log('🔍 Autocompletar de produtos habilitado no campo Descrição do Produto.');
         })();
     </script>
 </body>
