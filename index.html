@@ -1930,26 +1930,34 @@
                 const areaValores = Array.from(areaMap.values());
                 if (areaLabels.length > 0) {
                     const ctxArea = canvasArea.getContext('2d');
+                    
+                    // Paleta de cores para as fatias
+                    const areaCores = [
+                        '#7C3AED', '#A78BFA', '#5B2A86', '#3C1053',
+                        '#F57C00', '#D32F2F', '#B8860B', '#1A6B9E',
+                        '#C0392B', '#1A0033', '#00897B', '#FF7043'
+                    ];
+
                     chartArea = new Chart(ctxArea, {
-                        type: 'bar',
+                        type: 'pie',
                         data: {
                             labels: areaLabels,
                             datasets: [{
                                 label: 'Ocorrências',
                                 data: areaValores,
-                                backgroundColor: '#7C3AED',
-                                borderColor: '#3C1053',
-                                borderWidth: 1
+                                backgroundColor: areaCores.slice(0, areaLabels.length),
+                                borderColor: '#FFFFFF',
+                                borderWidth: 2
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: true,
                             plugins: {
-                                legend: { display: false }
-                            },
-                            scales: {
-                                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { font: { size: 10 } }
+                                }
                             }
                         }
                     });
