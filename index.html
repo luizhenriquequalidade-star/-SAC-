@@ -972,19 +972,15 @@
                             <textarea class="form-textarea" id="solucaoProblema" placeholder="Descreva a solução aplicada ou proposta..." rows="3"></textarea>
                         </div>
 
+                        <!-- ALTERAÇÃO: type="text" e inputmode para aceitar vírgula -->
                         <div class="form-group">
                             <label class="form-label">Valor da NFD (R$)</label>
-                            <input type="number" class="form-input" id="valorNFD" placeholder="0.00" min="0" step="0.01">
+                            <input type="text" inputmode="decimal" class="form-input" id="valorNFD" placeholder="0,00">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Bonificação (R$)</label>
-                            <input type="number" class="form-input" id="bonificacao" placeholder="0.00" min="0" step="0.01">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Valor Total (NFD + Bonif.)</label>
-                            <input type="number" class="form-input" id="valorTotal" placeholder="0.00" min="0" step="0.01" readonly>
+                            <input type="text" inputmode="decimal" class="form-input" id="bonificacao" placeholder="0,00">
                         </div>
 
                         <div class="form-group full-width">
@@ -1096,6 +1092,10 @@
                         <h3>Valores de Devolução + Bonificação por Produto</h3>
                         <canvas id="graficoValoresProdutos"></canvas>
                     </div>
+                    <div class="chart-container">
+                        <h3>Comparação NFD vs Bonificação</h3>
+                        <canvas id="graficoComparacaoValores"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1149,6 +1149,7 @@
             let chartMotivos = null;
             let chartStatus = null;
             let chartValoresProdutos = null;
+            let chartComparacaoValores = null;
 
             // ==================== ELEMENTOS DOM ====================
             const form = document.getElementById('formNaoConformidade');
@@ -1168,7 +1169,6 @@
             const solucaoProblemaInput = document.getElementById('solucaoProblema');
             const valorNFDInput = document.getElementById('valorNFD');
             const bonificacaoInput = document.getElementById('bonificacao');
-            const valorTotalInput = document.getElementById('valorTotal');
 
             const btnSalvar = document.getElementById('btnSalvar');
             const btnLimpar = document.getElementById('btnLimpar');
@@ -1204,6 +1204,7 @@
             const canvasMotivos = document.getElementById('graficoMotivos');
             const canvasStatus = document.getElementById('graficoStatus');
             const canvasValoresProdutos = document.getElementById('graficoValoresProdutos');
+            const canvasComparacaoValores = document.getElementById('graficoComparacaoValores');
 
             const tabButtons = document.querySelectorAll('.tab-btn');
             const tabContents = document.querySelectorAll('.tab-content');
@@ -1331,6 +1332,31 @@
             }
 
             // ==================== FUNÇÕES UTILITÁRIAS ====================
+            // Função para converter valor digitado em formato BR (ex: 1.234,56) para número
+            function parseValorBR(valor) {
+                if (!valor) return null;
+                valor = valor.trim();
+                if (valor.includes(',')) {
+                    // Assume formato brasileiro: pontos são milhares, vírgula é decimal
+                    valor = valor.replace(/\./g, '').replace(',', '.');
+                } else {
+                    // Sem vírgula, pode ter ponto como decimal ou milhar.
+                    // Se houver mais de um ponto, assume que são milhares e o último é decimal (ex: 1.234.567)
+                    if ((valor.match(/\./g) || []).length > 1) {
+                        const partes = valor.split('.');
+                        valor = partes.slice(0, -1).join('') + '.' + partes[partes.length - 1];
+                    }
+                    // Caso tenha apenas um ponto, mantém (ex: 1234.56 ou 1.234)
+                }
+                return parseFloat(valor);
+            }
+
+            // Formata um número para o formato brasileiro (ex: 1234.56 -> "1.234,56")
+            function formatarValorInput(valor) {
+                if (valor === null || valor === undefined || isNaN(valor)) return '';
+                return Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
             function formatarData(dataISO) {
                 if (!dataISO) return '-';
                 const [ano, mes, dia] = dataISO.split('-');
@@ -1549,13 +1575,6 @@
                 });
             }
 
-            function atualizarValorTotal() {
-                const nfd = parseFloat(valorNFDInput.value) || 0;
-                const bonif = parseFloat(bonificacaoInput.value) || 0;
-                const total = nfd + bonif;
-                valorTotalInput.value = total.toFixed(2);
-            }
-
             function limparFormulario() {
                 form.reset();
                 numRegistroInput.value = '';
@@ -1564,7 +1583,6 @@
                 popularSelectAndamento(false);
                 valorNFDInput.value = '';
                 bonificacaoInput.value = '';
-                valorTotalInput.value = '';
                 codItemInput.value = '';
                 descricaoProdutoInput.value = '';
                 registroEmEdicao = null;
@@ -1590,9 +1608,9 @@
                     op: opInput.value.trim(),
                     andamento: andamentoInput.value,
                     solucaoProblema: solucaoProblemaInput.value.trim(),
-                    valorNFD: valorNFDInput.value ? parseFloat(valorNFDInput.value) : null,
-                    bonificacao: bonificacaoInput.value ? parseFloat(bonificacaoInput.value) : null,
-                    valorTotal: valorTotalInput.value ? parseFloat(valorTotalInput.value) : null,
+                    // Conversão dos valores usando parseValorBR para aceitar vírgula/ponto
+                    valorNFD: parseValorBR(valorNFDInput.value),
+                    bonificacao: parseValorBR(bonificacaoInput.value),
                 };
             }
 
@@ -1740,11 +1758,9 @@
                 opInput.value = registro.op || '';
                 popularSelectAndamento(true, registro.andamento);
                 solucaoProblemaInput.value = registro.solucaoProblema || '';
-                valorNFDInput.value = registro.valorNFD !== null && registro.valorNFD !== undefined ? registro
-                    .valorNFD : '';
-                bonificacaoInput.value = registro.bonificacao !== null && registro.bonificacao !== undefined ? registro
-                    .bonificacao : '';
-                atualizarValorTotal();
+                // Exibir valores no formato BR (ex: 1.234,56)
+                valorNFDInput.value = formatarValorInput(registro.valorNFD);
+                bonificacaoInput.value = formatarValorInput(registro.bonificacao);
 
                 btnSalvar.innerHTML = '✏️ Atualizar Registro';
                 btnSalvar.className = 'btn btn-warning';
@@ -1898,6 +1914,7 @@
                 if (chartMotivos) { chartMotivos.destroy(); chartMotivos = null; }
                 if (chartStatus) { chartStatus.destroy(); chartStatus = null; }
                 if (chartValoresProdutos) { chartValoresProdutos.destroy(); chartValoresProdutos = null; }
+                if (chartComparacaoValores) { chartComparacaoValores.destroy(); chartComparacaoValores = null; }
             }
 
             function renderizarDashboard() {
@@ -2080,6 +2097,41 @@
                         }
                     });
                 }
+
+                // NOVO GRÁFICO: Comparação NFD vs Bonificação
+                const totalNFD = dados.reduce((acc, r) => acc + (parseFloat(r.valorNFD) || 0), 0);
+                const totalBonif = dados.reduce((acc, r) => acc + (parseFloat(r.bonificacao) || 0), 0);
+                const ctxComparacao = canvasComparacaoValores.getContext('2d');
+                chartComparacaoValores = new Chart(ctxComparacao, {
+                    type: 'bar',
+                    data: {
+                        labels: ['NFD', 'Bonificação'],
+                        datasets: [{
+                            label: 'Valores (R$)',
+                            data: [totalNFD, totalBonif],
+                            backgroundColor: ['#3C1053', '#7C3AED'],
+                            borderColor: ['#1A0033', '#5B2A86'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'R$ ' + context.raw.toFixed(2).replace('.', ',');
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
             }
 
             // ==================== ABAS ====================
@@ -2132,9 +2184,6 @@
                 renderizarDashboard();
                 mostrarToast('Filtros do dashboard removidos!', 'warning');
             });
-
-            valorNFDInput.addEventListener('input', atualizarValorTotal);
-            bonificacaoInput.addEventListener('input', atualizarValorTotal);
 
             // ==================== AUTO-PREENCHIMENTO CÓDIGO ↔ DESCRIÇÃO ====================
             codItemInput.addEventListener('input', function() {
@@ -2198,7 +2247,6 @@
                     popularSelectAndamento(false);
                     valorNFDInput.value = '';
                     bonificacaoInput.value = '';
-                    valorTotalInput.value = '';
                     codItemInput.value = '';
                     descricaoProdutoInput.value = '';
                     preencherDatalistDescricao();
