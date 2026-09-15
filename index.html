@@ -13,8 +13,6 @@
     service cloud.firestore {
       match /databases/{database}/documents {
         match /registros/{docId} {
-          // Leitura e escrita permitidas apenas com dados válidos.
-          // Ajuste para incluir autenticação quando implementada.
           allow read: if true;
           allow create: if request.resource.data.numRegistro is string
                         && request.resource.data.cliente is string
@@ -24,7 +22,6 @@
                         && request.resource.data.cliente is string;
           allow delete: if true;
         }
-        // Bloqueia qualquer outra coleção
         match /{document=**} {
           allow read, write: if false;
         }
@@ -487,7 +484,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.82rem;
-            min-width: 1100px;
+            min-width: 1250px;
         }
         .table thead {
             background: linear-gradient(135deg, #3C1053 0%, #5B2A86 100%);
@@ -760,7 +757,6 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Overlay global de carregamento inicial */
         .global-loading {
             position: fixed;
             top: 0; left: 0;
@@ -793,7 +789,6 @@
 </head>
 <body>
 
-    <!-- Overlay de carregamento global -->
     <div class="global-loading" id="globalLoading">
         <div class="spinner"></div>
         <div class="txt">Carregando dados do Firebase...</div>
@@ -924,6 +919,12 @@
                             <textarea class="form-textarea" id="solucaoProblema" placeholder="Descreva a solução aplicada ou proposta..." rows="3"></textarea>
                         </div>
 
+                        <!-- NOVO CAMPO: Nf / Nfd -->
+                        <div class="form-group">
+                            <label class="form-label">Nf / Nfd</label>
+                            <input type="text" class="form-input" id="nfNfd" placeholder="Número da NF / Nfd">
+                        </div>
+
                         <div class="form-group">
                             <label class="form-label">Bonificação (R$)</label>
                             <input type="text" inputmode="decimal" class="form-input" id="bonificacao" placeholder="0,00">
@@ -988,6 +989,7 @@
                                 <th>Cliente</th>
                                 <th>Área</th>
                                 <th>Origem</th>
+                                <th>Nf / Nfd</th>
                                 <th>Causa Resumida</th>
                                 <th>Andamento</th>
                                 <th>Tempo Total</th>
@@ -1098,9 +1100,6 @@
             firebase.initializeApp(firebaseConfig);
             const db = firebase.firestore();
 
-            // === OTIMIZAÇÃO FIREBASE #1: Cache offline persistente ===
-            // Economiza leituras ao recarregar a página. Se o navegador não suportar,
-            // cai no modo padrão sem problema.
             db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
                 if (err.code === 'failed-precondition') {
                     console.warn('Persistência: múltiplas abas abertas.');
@@ -1110,8 +1109,6 @@
             });
 
             const COLLECTION_NAME = 'registros';
-            // === OTIMIZAÇÃO #2: Limite de registros por carga ===
-            // Ajuste conforme necessário. 2000 registros é razoável para o plano Spark.
             const LIMITE_REGISTROS = 2000;
 
             Chart.register(ChartDataLabels);
@@ -1152,6 +1149,7 @@
             const bonificacaoInput = $('bonificacao');
             const prorrogacaoInput = $('prorrogacao');
             const reemissaoInput = $('reemissao');
+            const nfNfdInput = $('nfNfd'); // NOVO
 
             const btnSalvar = $('btnSalvar');
             const btnLimpar = $('btnLimpar');
@@ -1309,7 +1307,6 @@
                 return String(texto || '').trim().replace(/\s+/g, ' ');
             }
 
-            // Debounce - usado no campo de busca para evitar re-render a cada tecla
             function debounce(fn, delay) {
                 let timer = null;
                 return function(...args) {
@@ -1411,7 +1408,6 @@
                 }
             }
 
-            // Mapa centralizado de status -> classe de badge + ícone (evita 2 switches)
             const STATUS_INFO = {
                 'Abertura da RNC':              { badge: 'badge-abertura',      icon: '🔓' },
                 'Aguardando liberação':         { badge: 'badge-liberacao',     icon: '🔐' },
@@ -1473,10 +1469,6 @@
             // ========================================================
             // FIREBASE - OPERAÇÕES
             // ========================================================
-
-            // === OTIMIZAÇÃO #3: query limitada ===
-            // Ordenamos localmente por numRegistro depois. Não usar orderBy aqui
-            // para não exigir índices e evitar surpresas no plano Spark.
             async function carregarRegistrosDoFirebase() {
                 const querySnapshot = await db.collection(COLLECTION_NAME)
                     .limit(LIMITE_REGISTROS)
@@ -1486,10 +1478,10 @@
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     data.docId = doc.id;
-                    // Normalização de campos legados (sem alterar no banco)
                     if (data.bonificacao === undefined) data.bonificacao = null;
                     if (data.prorrogacao === undefined) data.prorrogacao = null;
                     if (data.reemissao === undefined) data.reemissao = null;
+                    if (data.nfNfd === undefined) data.nfNfd = ''; // NOVO
                     registros.push(data);
                 });
 
@@ -1543,7 +1535,6 @@
                 return Math.max(0, fim - inicio);
             }
 
-            // Todas as opções visíveis desde o início (registro novo ou edição)
             function popularSelectAndamento(modoEdicao = false, andamentoAtual = null) {
                 const opcoes = [
                     { valor: 'Abertura da RNC', texto: '🔓 Abertura da RNC' },
@@ -1578,6 +1569,7 @@
                 bonificacaoInput.value = '';
                 prorrogacaoInput.value = '';
                 reemissaoInput.value = '';
+                nfNfdInput.value = ''; // NOVO
                 codItemInput.value = '';
                 descricaoProdutoInput.value = '';
                 registroEmEdicao = null;
@@ -1608,9 +1600,6 @@
                     if (n !== null) qtdReclamada = Math.round(n);
                 }
 
-                // NOTA: removemos "valorTotal" daqui pois misturava unidades (qty + R$).
-                // Não é mais calculado nem exibido. Se algum registro antigo possui
-                // esse campo, ele permanece no Firestore mas é ignorado.
                 return {
                     numRegistro: numRegistroInput.value.trim(),
                     cliente: clienteInput.value.trim(),
@@ -1626,7 +1615,8 @@
                     valorNFD: qtdReclamada,
                     bonificacao: parseValorBR(bonificacaoInput.value),
                     prorrogacao: prorrog,
-                    reemissao: reemissao
+                    reemissao: reemissao,
+                    nfNfd: nfNfdInput.value.trim() // NOVO
                 };
             }
 
@@ -1662,7 +1652,6 @@
 
                 try {
                     if (registroEmEdicao !== null) {
-                        // === EDIÇÃO ===
                         const idx = registros.indexOf(registroEmEdicao);
                         if (idx === -1) {
                             mostrarToast('Registro não encontrado localmente.', 'error');
@@ -1689,9 +1678,7 @@
 
                         await salvarRegistroNoFirebase(dadosParaSalvar, original.docId);
 
-                        // === OTIMIZAÇÃO #4: atualiza array local sem re-fetch ===
                         registros[idx] = { ...dadosParaSalvar, docId: original.docId };
-                        // Reordena por numRegistro
                         registros.sort((a, b) => {
                             const numA = parseInt(a.numRegistro) || 0;
                             const numB = parseInt(b.numRegistro) || 0;
@@ -1701,7 +1688,6 @@
                         mostrarToast(`Registro #${dados.numRegistro} atualizado com sucesso!`, 'success');
                         registroEmEdicao = null;
                     } else {
-                        // === NOVO ===
                         const novoRegistro = {
                             ...dados,
                             dataAbertura: agora,
@@ -1711,7 +1697,6 @@
                         };
                         const novoDocId = await salvarRegistroNoFirebase(novoRegistro);
 
-                        // === OTIMIZAÇÃO #4: adiciona ao array local sem re-fetch ===
                         registros.push({ ...novoRegistro, docId: novoDocId });
                         registros.sort((a, b) => {
                             const numA = parseInt(a.numRegistro) || 0;
@@ -1782,6 +1767,7 @@
                     ? formatarQuantidadeInput(registro.prorrogacao) : '';
                 reemissaoInput.value = (registro.reemissao !== null && registro.reemissao !== undefined)
                     ? formatarQuantidadeInput(registro.reemissao) : '';
+                nfNfdInput.value = registro.nfNfd || ''; // NOVO
 
                 btnSalvar.innerHTML = '✏️ Atualizar Registro';
                 btnSalvar.className = 'btn btn-warning';
@@ -1831,6 +1817,7 @@
                     <div class="modal-detail-item"><div class="label">Código do Item</div><div class="value">${registro.codItem || '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Descrição do Produto</div><div class="value">${registro.descricaoProduto || '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Quantidade Reclamada</div><div class="value">${registro.valorNFD !== null && registro.valorNFD !== undefined ? registro.valorNFD : '-'}</div></div>
+                    <div class="modal-detail-item"><div class="label">Nf / Nfd</div><div class="value">${registro.nfNfd || '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Bonificação</div><div class="value">${formatarValor(registro.bonificacao)}</div></div>
                     <div class="modal-detail-item"><div class="label">Prorrogação</div><div class="value">${prorrogTexto}</div></div>
                     <div class="modal-detail-item"><div class="label">Reemissão</div><div class="value">${reemissaoTexto}</div></div>
@@ -1862,7 +1849,8 @@
                     if (busca) {
                         const campos = [
                             r.numRegistro, r.cliente, r.causaResumida, r.causaCompleta,
-                            r.codItem, r.descricaoProduto, r.areaEnvolvida, r.andamento
+                            r.codItem, r.descricaoProduto, r.areaEnvolvida, r.andamento,
+                            r.nfNfd // NOVO — busca também pelo NF/Nfd
                         ].join(' ').toLowerCase();
                         if (!campos.includes(busca)) return false;
                     }
@@ -1882,7 +1870,6 @@
                 const tbl = tableWrapper.querySelector('table');
                 if (tbl) tbl.style.display = 'table';
 
-                // === OTIMIZAÇÃO #5: usa DocumentFragment para inserir de uma só vez ===
                 const fragment = document.createDocumentFragment();
 
                 filtrados.forEach((r) => {
@@ -1899,6 +1886,7 @@
                         <td>${r.cliente || '-'}</td>
                         <td>${r.areaEnvolvida || '-'}</td>
                         <td>${r.origem === 'Interno' ? '🏭 Interno' : '🌐 Externo'}</td>
+                        <td>${r.nfNfd || '-'}</td>
                         <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${r.causaResumida || ''}">${r.causaResumida || '-'}</td>
                         <td><span class="badge ${badgeClass}">${statusIcon} ${r.andamento}</span></td>
                         <td>${formatarDuracao(tempoTotal)}</td>
@@ -1917,7 +1905,6 @@
                 tabelaHistorico.appendChild(fragment);
             }
 
-            // Delegated click para os botões da tabela (evita onclick inline)
             tabelaHistorico.addEventListener('click', (e) => {
                 const btn = e.target.closest('button[data-action]');
                 if (!btn) return;
@@ -1974,7 +1961,6 @@
                 destruirGraficos();
                 const dados = filtrarRegistrosDashboard();
 
-                // ---------- Área (Pie) ----------
                 const areaMap = new Map();
                 dados.forEach(r => {
                     const area = r.areaEnvolvida || 'Não informada';
@@ -2016,7 +2002,6 @@
                     });
                 }
 
-                // ---------- Quantidade Reclamada por Produto ----------
                 const produtoMap = new Map();
                 dados.forEach(r => {
                     const nome = r.descricaoProduto || r.codItem || 'Sem identificação';
@@ -2053,7 +2038,6 @@
                     });
                 }
 
-                // ---------- Motivos (Doughnut) ----------
                 const motivoMap = new Map();
                 dados.forEach(r => {
                     const motivo = r.causaResumida || 'Não informado';
@@ -2091,7 +2075,6 @@
                     });
                 }
 
-                // ---------- Status (Bar) ----------
                 let abertas = 0, concluidas = 0;
                 dados.forEach(r => {
                     if (r.andamento === 'Concluído') concluidas++;
@@ -2121,7 +2104,6 @@
                     }
                 });
 
-                // ---------- Bonificação por Produto ----------
                 const bonifMap = new Map();
                 dados.forEach(r => {
                     const produto = r.descricaoProduto || r.codItem || 'Sem identificação';
@@ -2166,7 +2148,6 @@
                     });
                 }
 
-                // ---------- Comparação ----------
                 let totalQtdReclamada = 0, totalBonif = 0;
                 dados.forEach(r => {
                     totalQtdReclamada += parseFloat(r.valorNFD) || 0;
@@ -2450,7 +2431,6 @@
                 mostrarToast('Filtros removidos!', 'warning');
             });
 
-            // === OTIMIZAÇÃO #6: debounce no campo de busca ===
             const renderizarTabelaDebounced = debounce(renderizarTabela, 300);
 
             filtroData.addEventListener('change', renderizarTabela);
@@ -2527,7 +2507,6 @@
                     await carregarRegistrosDoFirebase();
                     atualizarStats();
 
-                    // Setup do formulário
                     dataOcorrenciaInput.value = new Date().toISOString().split('T')[0];
                     setOrigemSelecionada('Interno');
                     popularSelectAndamento(false);
