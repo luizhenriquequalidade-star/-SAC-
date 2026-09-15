@@ -957,9 +957,10 @@
                             <textarea class="form-textarea" id="solucaoProblema" placeholder="Descreva a solução aplicada ou proposta..." rows="3"></textarea>
                         </div>
 
+                        <!-- ALTERADO: Valor da NFD (R$) → Quantidade Reclamada -->
                         <div class="form-group">
-                            <label class="form-label">Valor da NFD (R$)</label>
-                            <input type="text" inputmode="decimal" class="form-input" id="valorNFD" placeholder="0,00">
+                            <label class="form-label">Quantidade Reclamada</label>
+                            <input type="text" inputmode="numeric" class="form-input" id="valorNFD" placeholder="0">
                         </div>
 
                         <div class="form-group">
@@ -1638,6 +1639,14 @@
                     if (reemissaoNum !== null) reemissao = Math.round(reemissaoNum);
                 }
 
+                // Converte quantidade reclamada (inteiro)
+                const qtdReclamadaRaw = valorNFDInput.value.trim();
+                let qtdReclamada = null;
+                if (qtdReclamadaRaw) {
+                    const qtdReclamadaNum = parseValorBR(qtdReclamadaRaw);
+                    if (qtdReclamadaNum !== null) qtdReclamada = Math.round(qtdReclamadaNum);
+                }
+
                 return {
                     numRegistro: numRegistroInput.value.trim(),
                     cliente: clienteInput.value.trim(),
@@ -1651,8 +1660,8 @@
                     qtdFaturada: qtd,
                     andamento: andamentoInput.value,
                     solucaoProblema: solucaoProblemaInput.value.trim(),
-                    // Conversão dos valores usando parseValorBR (aceita ponto e vírgula)
-                    valorNFD: parseValorBR(valorNFDInput.value),
+                    // Campo "valorNFD" agora armazena a Quantidade Reclamada (inteiro)
+                    valorNFD: qtdReclamada,
                     bonificacao: parseValorBR(bonificacaoInput.value),
                     prorrogacao: prorrog,
                     reemissao: reemissao,
@@ -1798,8 +1807,10 @@
                     : '';
                 popularSelectAndamento(true, registro.andamento);
                 solucaoProblemaInput.value = registro.solucaoProblema || '';
-                // Exibir valores no formato BR (ex: 1.234,56)
-                valorNFDInput.value = formatarValorInput(registro.valorNFD);
+                // Exibir Quantidade Reclamada (campo armazenado como valorNFD)
+                valorNFDInput.value = (registro.valorNFD !== null && registro.valorNFD !== undefined)
+                    ? formatarQuantidadeInput(registro.valorNFD)
+                    : '';
                 bonificacaoInput.value = formatarValorInput(registro.bonificacao);
                 // Exibir prorrogação (dias)
                 prorrogacaoInput.value = (registro.prorrogacao !== null && registro.prorrogacao !== undefined)
@@ -1864,7 +1875,7 @@
                     <div class="modal-detail-item"><div class="label">Código do Item</div><div class="value">${registro.codItem || '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Descrição do Produto</div><div class="value">${registro.descricaoProduto || '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Quantidade Faturada</div><div class="value">${registro.qtdFaturada !== null && registro.qtdFaturada !== undefined ? registro.qtdFaturada : '-'}</div></div>
-                    <div class="modal-detail-item"><div class="label">Valor da NFD</div><div class="value">${formatarValor(registro.valorNFD)}</div></div>
+                    <div class="modal-detail-item"><div class="label">Quantidade Reclamada</div><div class="value">${registro.valorNFD !== null && registro.valorNFD !== undefined ? registro.valorNFD : '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Bonificação</div><div class="value">${formatarValor(registro.bonificacao)}</div></div>
                     <div class="modal-detail-item"><div class="label">Prorrogação</div><div class="value">${prorrogTexto}</div></div>
                     <div class="modal-detail-item"><div class="label">Reemissão</div><div class="value">${reemissaoTexto}</div></div>
@@ -2196,17 +2207,17 @@
                     });
                 }
 
-                // NOVO GRÁFICO: Comparação NFD vs Bonificação
-                const totalNFD = dados.reduce((acc, r) => acc + (parseFloat(r.valorNFD) || 0), 0);
+                // GRÁFICO: Comparação Quantidade Reclamada vs Bonificação
+                const totalQtdReclamada = dados.reduce((acc, r) => acc + (parseFloat(r.valorNFD) || 0), 0);
                 const totalBonif = dados.reduce((acc, r) => acc + (parseFloat(r.bonificacao) || 0), 0);
                 const ctxComparacao = canvasComparacaoValores.getContext('2d');
                 chartComparacaoValores = new Chart(ctxComparacao, {
                     type: 'bar',
                     data: {
-                        labels: ['NFD', 'Bonificação'],
+                        labels: ['Qtd. Reclamada', 'Bonificação'],
                         datasets: [{
-                            label: 'Valores (R$)',
-                            data: [totalNFD, totalBonif],
+                            label: 'Valores',
+                            data: [totalQtdReclamada, totalBonif],
                             backgroundColor: ['#3C1053', '#7C3AED'],
                             borderColor: ['#1A0033', '#5B2A86'],
                             borderWidth: 1
@@ -2227,7 +2238,7 @@
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        return 'R$ ' + context.raw.toFixed(2).replace('.', ',');
+                                        return context.raw.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                                     }
                                 }
                             }
