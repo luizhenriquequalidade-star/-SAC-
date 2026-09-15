@@ -920,17 +920,6 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Turno <span class="required">*</span></label>
-                            <select class="form-select" id="turno" required>
-                                <option value="">Selecione...</option>
-                                <option value="1º Turno - Manhã">1º Turno - Manhã</option>
-                                <option value="2º Turno - Tarde">2º Turno - Tarde</option>
-                                <option value="3º Turno - Noite">3º Turno - Noite</option>
-                                <option value="Administrativo">Administrativo</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
                             <label class="form-label">Causa Resumida <span class="required">*</span></label>
                             <input type="text" class="form-input" id="causaResumida" placeholder="Resumo da causa" required>
                         </div>
@@ -951,14 +940,10 @@
                             <datalist id="listaDescricaoProdutos"></datalist>
                         </div>
 
+                        <!-- ALTERAÇÃO: aceita ponto e vírgula -->
                         <div class="form-group">
                             <label class="form-label">Quantidade Faturada</label>
-                            <input type="number" class="form-input" id="qtdFaturada" placeholder="0" min="0" step="1">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">OP (Ordem de Produção)</label>
-                            <input type="text" class="form-input" id="op" placeholder="Nº da OP">
+                            <input type="text" inputmode="decimal" class="form-input" id="qtdFaturada" placeholder="0">
                         </div>
 
                         <div class="form-group">
@@ -973,12 +958,13 @@
                             <textarea class="form-textarea" id="solucaoProblema" placeholder="Descreva a solução aplicada ou proposta..." rows="3"></textarea>
                         </div>
 
-                        <!-- ALTERAÇÃO: type="text" e inputmode para aceitar vírgula -->
+                        <!-- ALTERAÇÃO: aceita ponto e vírgula -->
                         <div class="form-group">
                             <label class="form-label">Valor da NFD (R$)</label>
                             <input type="text" inputmode="decimal" class="form-input" id="valorNFD" placeholder="0,00">
                         </div>
 
+                        <!-- ALTERAÇÃO: aceita ponto e vírgula -->
                         <div class="form-group">
                             <label class="form-label">Bonificação (R$)</label>
                             <input type="text" inputmode="decimal" class="form-input" id="bonificacao" placeholder="0,00">
@@ -1162,13 +1148,11 @@
             const dataOcorrenciaInput = document.getElementById('dataOcorrencia');
             const areaEnvolvidaInput = document.getElementById('areaEnvolvida');
             const origemRadios = document.querySelectorAll('input[name="origem"]');
-            const turnoInput = document.getElementById('turno');
             const causaResumidaInput = document.getElementById('causaResumida');
             const causaCompletaInput = document.getElementById('causaCompleta');
             const codItemInput = document.getElementById('codItem');
             const descricaoProdutoInput = document.getElementById('descricaoProduto');
             const qtdFaturadaInput = document.getElementById('qtdFaturada');
-            const opInput = document.getElementById('op');
             const andamentoInput = document.getElementById('andamento');
             const solucaoProblemaInput = document.getElementById('solucaoProblema');
             const valorNFDInput = document.getElementById('valorNFD');
@@ -1336,29 +1320,46 @@
             }
 
             // ==================== FUNÇÕES UTILITÁRIAS ====================
-            // Função para converter valor digitado em formato BR (ex: 1.234,56) para número
+
+            // Converte valores digitados em formato BR ou US para número.
+            // Aceita: "1.234,56" | "1234,56" | "1234.56" | "1.234" | "1234" | "0,5" | "0.5"
             function parseValorBR(valor) {
+                if (valor === null || valor === undefined) return null;
+                valor = String(valor).trim();
                 if (!valor) return null;
-                valor = valor.trim();
-                if (valor.includes(',')) {
-                    // Assume formato brasileiro: pontos são milhares, vírgula é decimal
+
+                const temVirgula = valor.includes(',');
+                const temPonto = valor.includes('.');
+
+                if (temVirgula) {
+                    // Formato BR: pontos são milhares, vírgula é decimal
                     valor = valor.replace(/\./g, '').replace(',', '.');
-                } else {
-                    // Sem vírgula, pode ter ponto como decimal ou milhar.
-                    // Se houver mais de um ponto, assume que são milhares e o último é decimal (ex: 1.234.567)
-                    if ((valor.match(/\./g) || []).length > 1) {
-                        const partes = valor.split('.');
-                        valor = partes.slice(0, -1).join('') + '.' + partes[partes.length - 1];
+                } else if (temPonto) {
+                    const partes = valor.split('.');
+                    if (partes.length > 2) {
+                        // Múltiplos pontos = separadores de milhar (ex: 1.234.567 -> 1234567)
+                        valor = partes.join('');
+                    } else if (partes[1] && partes[1].length === 3) {
+                        // Um ponto seguido de 3 dígitos = milhar BR (ex: 1.234 -> 1234)
+                        valor = partes.join('');
                     }
-                    // Caso tenha apenas um ponto, mantém (ex: 1234.56 ou 1.234)
+                    // Caso contrário mantém o ponto como decimal (ex: 1234.56 -> 1234.56)
                 }
-                return parseFloat(valor);
+
+                const num = parseFloat(valor);
+                return isNaN(num) ? null : num;
             }
 
             // Formata um número para o formato brasileiro (ex: 1234.56 -> "1.234,56")
             function formatarValorInput(valor) {
                 if (valor === null || valor === undefined || isNaN(valor)) return '';
                 return Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
+            // Formata quantidade (inteiro) sem casas decimais
+            function formatarQuantidadeInput(valor) {
+                if (valor === null || valor === undefined || isNaN(valor)) return '';
+                return Number(valor).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
             }
 
             function formatarData(dataISO) {
@@ -1587,6 +1588,7 @@
                 popularSelectAndamento(false);
                 valorNFDInput.value = '';
                 bonificacaoInput.value = '';
+                qtdFaturadaInput.value = '';
                 codItemInput.value = '';
                 descricaoProdutoInput.value = '';
                 registroEmEdicao = null;
@@ -1597,22 +1599,28 @@
             }
 
             function coletarDadosFormulario() {
+                // Converte quantidade aceitando ponto e vírgula; arredonda para inteiro
+                const qtdRaw = qtdFaturadaInput.value.trim();
+                let qtd = null;
+                if (qtdRaw) {
+                    const qtdNum = parseValorBR(qtdRaw);
+                    if (qtdNum !== null) qtd = Math.round(qtdNum);
+                }
+
                 return {
                     numRegistro: numRegistroInput.value.trim(),
                     cliente: clienteInput.value.trim(),
                     dataOcorrencia: dataOcorrenciaInput.value,
                     areaEnvolvida: areaEnvolvidaInput.value,
                     origem: getOrigemSelecionada(),
-                    turno: turnoInput.value,
                     causaResumida: causaResumidaInput.value.trim(),
                     causaCompleta: causaCompletaInput.value.trim(),
                     codItem: codItemInput.value.trim(),
                     descricaoProduto: descricaoProdutoInput.value.trim(),
-                    qtdFaturada: qtdFaturadaInput.value ? parseInt(qtdFaturadaInput.value) : null,
-                    op: opInput.value.trim(),
+                    qtdFaturada: qtd,
                     andamento: andamentoInput.value,
                     solucaoProblema: solucaoProblemaInput.value.trim(),
-                    // Conversão dos valores usando parseValorBR para aceitar vírgula/ponto
+                    // Conversão dos valores usando parseValorBR (aceita ponto e vírgula)
                     valorNFD: parseValorBR(valorNFDInput.value),
                     bonificacao: parseValorBR(bonificacaoInput.value),
                 };
@@ -1637,11 +1645,6 @@
                 if (!dados.areaEnvolvida) {
                     mostrarToast('O campo "Área Envolvida" é obrigatório!', 'error');
                     areaEnvolvidaInput.focus();
-                    return false;
-                }
-                if (!dados.turno) {
-                    mostrarToast('O campo "Turno" é obrigatório!', 'error');
-                    turnoInput.focus();
                     return false;
                 }
                 if (!dados.causaResumida) {
@@ -1752,14 +1755,14 @@
                 dataOcorrenciaInput.value = registro.dataOcorrencia;
                 areaEnvolvidaInput.value = registro.areaEnvolvida;
                 setOrigemSelecionada(registro.origem);
-                turnoInput.value = registro.turno;
                 causaResumidaInput.value = registro.causaResumida;
                 causaCompletaInput.value = registro.causaCompleta;
                 codItemInput.value = registro.codItem || '';
                 descricaoProdutoInput.value = registro.descricaoProduto || '';
-                qtdFaturadaInput.value = registro.qtdFaturada !== null && registro.qtdFaturada !== undefined ? registro
-                    .qtdFaturada : '';
-                opInput.value = registro.op || '';
+                // Exibir quantidade aceitando ponto/vírgula
+                qtdFaturadaInput.value = (registro.qtdFaturada !== null && registro.qtdFaturada !== undefined)
+                    ? formatarQuantidadeInput(registro.qtdFaturada)
+                    : '';
                 popularSelectAndamento(true, registro.andamento);
                 solucaoProblemaInput.value = registro.solucaoProblema || '';
                 // Exibir valores no formato BR (ex: 1.234,56)
@@ -1807,13 +1810,11 @@
                     <div class="modal-detail-item"><div class="label">Data da Ocorrência</div><div class="value">${formatarData(registro.dataOcorrencia)}</div></div>
                     <div class="modal-detail-item"><div class="label">Área Envolvida</div><div class="value">${registro.areaEnvolvida || '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Origem</div><div class="value">${registro.origem === 'Interno' ? '🏭 Interno' : '🌐 Externo'}</div></div>
-                    <div class="modal-detail-item"><div class="label">Turno</div><div class="value">${registro.turno || '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Andamento</div><div class="value"><span class="badge ${badgeClass}">${statusIcon} ${registro.andamento}</span></div></div>
                     <div class="modal-detail-item"><div class="label">Tempo Total</div><div class="value">${formatarDuracao(tempoTotal)}</div></div>
                     <div class="modal-detail-item"><div class="label">Código do Item</div><div class="value">${registro.codItem || '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Descrição do Produto</div><div class="value">${registro.descricaoProduto || '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Quantidade Faturada</div><div class="value">${registro.qtdFaturada !== null && registro.qtdFaturada !== undefined ? registro.qtdFaturada : '-'}</div></div>
-                    <div class="modal-detail-item"><div class="label">OP</div><div class="value">${registro.op || '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Valor da NFD</div><div class="value">${formatarValor(registro.valorNFD)}</div></div>
                     <div class="modal-detail-item"><div class="label">Bonificação</div><div class="value">${formatarValor(registro.bonificacao)}</div></div>
                     <div class="modal-detail-item"><div class="label">Valor Total</div><div class="value">${formatarValor(valorTotal)}</div></div>
@@ -1849,7 +1850,6 @@
                             r.causaCompleta,
                             r.codItem,
                             r.descricaoProduto,
-                            r.op,
                             r.areaEnvolvida,
                             r.andamento,
                         ].join(' ').toLowerCase();
@@ -2301,6 +2301,7 @@
                     popularSelectAndamento(false);
                     valorNFDInput.value = '';
                     bonificacaoInput.value = '';
+                    qtdFaturadaInput.value = '';
                     codItemInput.value = '';
                     descricaoProdutoInput.value = '';
                     preencherDatalistDescricao();
