@@ -197,6 +197,25 @@
             letter-spacing: 1px;
             opacity: 0.85; font-weight: 600; color: #fff;
         }
+        /* Badge de alerta no header - vermelho pulsante */
+        .stat-badge.stat-alerta {
+            background: linear-gradient(135deg, #B71C1C 0%, #F44336 100%);
+            border-color: rgba(255, 255, 255, 0.4);
+            animation: statAlertaPulse 1.8s ease-in-out infinite;
+        }
+        .stat-badge.stat-alerta .stat-value {
+            color: #fff;
+        }
+        @keyframes statAlertaPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7),
+                            0 10px 30px rgba(0, 0, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(244, 67, 54, 0),
+                            0 10px 30px rgba(0, 0, 0, 0.3);
+            }
+        }
         .container {
             max-width: 100%; width: 100%;
             margin: 0; padding: 24px;
@@ -514,6 +533,141 @@
         }
         .table tbody tr:nth-child(even) { background: #FAFAFE; }
         .table tbody tr:nth-child(even):hover { background: #E8EAF6; }
+
+        /* ==== LINHA DE ALERTA (mais de 10 dias aberta) ==== */
+        .table tbody tr.row-alerta {
+            background: linear-gradient(90deg, rgba(255, 235, 235, 0.85) 0%, rgba(255, 248, 245, 0.6) 100%) !important;
+            border-left: 5px solid #E53935;
+            position: relative;
+        }
+        .table tbody tr.row-alerta:hover {
+            background: linear-gradient(90deg, rgba(255, 220, 220, 0.95) 0%, rgba(255, 240, 235, 0.8) 100%) !important;
+        }
+        .table tbody tr.row-alerta td:first-child {
+            position: relative;
+        }
+        .table tbody tr.row-alerta td:first-child::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 5px; height: 100%;
+            background: #E53935;
+            animation: alertaPulseBorder 1.6s ease-in-out infinite;
+        }
+        @keyframes alertaPulseBorder {
+            0%, 100% { background: #E53935; box-shadow: 0 0 12px rgba(229, 57, 53, 0.6); }
+            50% { background: #FF6B6B; box-shadow: 0 0 20px rgba(229, 57, 53, 1); }
+        }
+
+        /* Badge profissional de alerta de prazo */
+        .badge-prazo {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: linear-gradient(135deg, #E53935 0%, #FF6B6B 100%);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.62rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            margin-left: 6px;
+            box-shadow: 0 3px 10px rgba(229, 57, 53, 0.4);
+            animation: badgePrazoPulse 1.8s ease-in-out infinite;
+            position: relative;
+        }
+        .badge-prazo::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: -3px;
+            width: 6px; height: 6px;
+            background: #E53935;
+            border-radius: 50%;
+            transform: translateY(-50%);
+            animation: dotPulse 1.8s ease-in-out infinite;
+        }
+        @keyframes badgePrazoPulse {
+            0%, 100% { box-shadow: 0 3px 10px rgba(229, 57, 53, 0.4); transform: scale(1); }
+            50% { box-shadow: 0 6px 18px rgba(229, 57, 53, 0.8); transform: scale(1.04); }
+        }
+        @keyframes dotPulse {
+            0%, 100% { opacity: 1; transform: translateY(-50%) scale(1); }
+            50% { opacity: 0.4; transform: translateY(-50%) scale(1.5); }
+        }
+        .badge-prazo .icon {
+            font-size: 0.75rem;
+            animation: clockTick 2s ease-in-out infinite;
+            display: inline-block;
+        }
+        @keyframes clockTick {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-12deg); }
+            75% { transform: rotate(12deg); }
+        }
+
+        /* Caixa de alerta dentro do modal */
+        .alerta-prazo-box {
+            background: linear-gradient(135deg, #FFF3F3 0%, #FFEBEE 100%);
+            border: 2px solid #E53935;
+            border-left: 6px solid #E53935;
+            border-radius: var(--radius-sm);
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            position: relative;
+            overflow: hidden;
+            animation: alertaBoxPulse 2s ease-in-out infinite;
+        }
+        @keyframes alertaBoxPulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(229, 57, 53, 0.25); }
+            50% { box-shadow: 0 8px 25px rgba(229, 57, 53, 0.5); }
+        }
+        .alerta-prazo-box .icon-alerta {
+            width: 46px; height: 46px;
+            background: linear-gradient(135deg, #E53935 0%, #FF6B6B 100%);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+            color: #fff;
+            flex-shrink: 0;
+            animation: iconAlertaShake 2.2s ease-in-out infinite;
+        }
+        @keyframes iconAlertaShake {
+            0%, 100% { transform: rotate(0deg); }
+            15% { transform: rotate(-15deg); }
+            30% { transform: rotate(15deg); }
+            45% { transform: rotate(-10deg); }
+            60% { transform: rotate(10deg); }
+            75% { transform: rotate(0deg); }
+        }
+        .alerta-prazo-box .texto-alerta {
+            flex: 1;
+            color: #8B0000;
+        }
+        .alerta-prazo-box .texto-alerta .titulo {
+            font-size: 0.95rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+            color: #C62828;
+        }
+        .alerta-prazo-box .texto-alerta .descricao {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #B71C1C;
+            line-height: 1.4;
+        }
+        .alerta-prazo-box .texto-alerta .descricao strong {
+            font-weight: 800;
+            color: #E53935;
+            font-size: 0.95rem;
+        }
+
         .badge {
             display: inline-block;
             padding: 5px 13px;
@@ -713,6 +867,7 @@
         .toast.success { background: linear-gradient(135deg, #3C1053 0%, #5B2A86 100%); }
         .toast.error { background: linear-gradient(135deg, #B71C1C 0%, #D32F2F 100%); }
         .toast.warning { background: linear-gradient(135deg, #E65100 0%, #F57C00 100%); }
+        .toast.alert-prazo { background: linear-gradient(135deg, #B71C1C 0%, #E53935 100%); }
         @media (max-width: 768px) {
             .header-inner { padding: 12px 14px; flex-direction: column; text-align: center; gap: 8px; }
             .logo-area { flex-direction: column; gap: 6px; }
@@ -815,6 +970,10 @@
                 <div class="stat-badge">
                     <div class="stat-value" id="statConcluidos">0</div>
                     <div class="stat-label">Concluídos</div>
+                </div>
+                <div class="stat-badge stat-alerta" id="statAlertaBadge" title="Reclamações abertas há 10 dias ou mais" style="display: none;">
+                    <div class="stat-value" id="statEmAtraso">0</div>
+                    <div class="stat-label">⚠️ Em Atraso</div>
                 </div>
             </div>
         </div>
@@ -919,10 +1078,9 @@
                             <textarea class="form-textarea" id="solucaoProblema" placeholder="Descreva a solução aplicada ou proposta..." rows="3"></textarea>
                         </div>
 
-                        <!-- NOVO CAMPO: Nf / Nfd -->
                         <div class="form-group">
                             <label class="form-label">Nf / Nfd</label>
-                            <input type="text" class="form-input" id="nfNfd" placeholder="Número da NF / Nfd">
+                            <input type="text" class="form-input" id="nfNfd" placeholder="Valores" autocomplete="off">
                         </div>
 
                         <div class="form-group">
@@ -972,7 +1130,7 @@
                         <input type="month" class="form-input" id="filtroMes" style="min-width: 160px;">
                     </div>
                     <div class="filter-group">
-                        <label class="filter-label">🔍 Buscar Cliente / Registro</label>
+                        <label class="filter-label">🔍 Buscar Cliente / Registro / Nf</label>
                         <input type="text" class="form-input" id="filtroBusca" placeholder="Digite para buscar..." style="min-width: 180px;">
                     </div>
                     <button class="btn btn-outline btn-sm" id="btnLimparFiltros" style="margin-bottom: 2px;">
@@ -1111,6 +1269,9 @@
             const COLLECTION_NAME = 'registros';
             const LIMITE_REGISTROS = 2000;
 
+            // === CONFIGURAÇÃO DO ALERTA DE PRAZO ===
+            const DIAS_ALERTA_PRAZO = 10;
+
             Chart.register(ChartDataLabels);
 
             // ========================================================
@@ -1149,7 +1310,7 @@
             const bonificacaoInput = $('bonificacao');
             const prorrogacaoInput = $('prorrogacao');
             const reemissaoInput = $('reemissao');
-            const nfNfdInput = $('nfNfd'); // NOVO
+            const nfNfdInput = $('nfNfd');
 
             const btnSalvar = $('btnSalvar');
             const btnLimpar = $('btnLimpar');
@@ -1166,6 +1327,8 @@
             const statTotal = $('statTotal');
             const statPendentes = $('statPendentes');
             const statConcluidos = $('statConcluidos');
+            const statEmAtraso = $('statEmAtraso');
+            const statAlertaBadge = $('statAlertaBadge');
 
             const modalOverlay = $('modalOverlay');
             const modalContent = $('modalContent');
@@ -1395,6 +1558,26 @@
                 return resultado;
             }
 
+            // === CÁLCULO DE DIAS ABERTO ===
+            // Retorna quantos dias o registro está aberto (a partir de dataAbertura).
+            // Retorna 0 se não houver dataAbertura.
+            function calcularDiasAberto(registro) {
+                if (!registro || !registro.dataAbertura) return 0;
+                const inicio = new Date(registro.dataAbertura).getTime();
+                if (isNaN(inicio)) return 0;
+                const agora = Date.now();
+                const dias = Math.floor((agora - inicio) / 86400000);
+                return Math.max(0, dias);
+            }
+
+            // === VERIFICA SE O REGISTRO ESTÁ EM ALERTA DE PRAZO ===
+            // Regras: andamento diferente de 'Concluído' E >= DIAS_ALERTA_PRAZO dias
+            function isAlertaPrazo(registro) {
+                if (!registro) return false;
+                if (registro.andamento === 'Concluído') return false;
+                return calcularDiasAberto(registro) >= DIAS_ALERTA_PRAZO;
+            }
+
             function getOrigemSelecionada() {
                 for (const radio of origemRadios) {
                     if (radio.checked) return radio.value;
@@ -1432,7 +1615,7 @@
             function mostrarToast(mensagem, tipo = 'success') {
                 const toast = document.createElement('div');
                 toast.className = `toast ${tipo}`;
-                const icon = tipo === 'success' ? '✅' : tipo === 'error' ? '❌' : '⚠️';
+                const icon = tipo === 'success' ? '✅' : tipo === 'error' ? '❌' : tipo === 'alert-prazo' ? '🚨' : '⚠️';
                 toast.innerHTML = `<span>${icon}</span> <span>${mensagem}</span>`;
                 toastContainer.appendChild(toast);
                 setTimeout(() => {
@@ -1481,7 +1664,7 @@
                     if (data.bonificacao === undefined) data.bonificacao = null;
                     if (data.prorrogacao === undefined) data.prorrogacao = null;
                     if (data.reemissao === undefined) data.reemissao = null;
-                    if (data.nfNfd === undefined) data.nfNfd = ''; // NOVO
+                    if (data.nfNfd === undefined) data.nfNfd = '';
                     registros.push(data);
                 });
 
@@ -1511,13 +1694,24 @@
             // ========================================================
             function atualizarStats() {
                 statTotal.textContent = registros.length;
-                let pendentes = 0, concluidos = 0;
+                let pendentes = 0, concluidos = 0, emAtraso = 0;
                 for (const r of registros) {
                     if (r.andamento === 'Concluído') concluidos++;
-                    else pendentes++;
+                    else {
+                        pendentes++;
+                        if (isAlertaPrazo(r)) emAtraso++;
+                    }
                 }
                 statPendentes.textContent = pendentes;
                 statConcluidos.textContent = concluidos;
+                statEmAtraso.textContent = emAtraso;
+
+                // Exibe/oculta o badge de alerta no header
+                if (emAtraso > 0) {
+                    statAlertaBadge.style.display = 'block';
+                } else {
+                    statAlertaBadge.style.display = 'none';
+                }
             }
 
             function calcularTempoTotal(registro) {
@@ -1569,7 +1763,7 @@
                 bonificacaoInput.value = '';
                 prorrogacaoInput.value = '';
                 reemissaoInput.value = '';
-                nfNfdInput.value = ''; // NOVO
+                nfNfdInput.value = '';
                 codItemInput.value = '';
                 descricaoProdutoInput.value = '';
                 registroEmEdicao = null;
@@ -1616,7 +1810,7 @@
                     bonificacao: parseValorBR(bonificacaoInput.value),
                     prorrogacao: prorrog,
                     reemissao: reemissao,
-                    nfNfd: nfNfdInput.value.trim() // NOVO
+                    nfNfd: nfNfdInput.value.trim()
                 };
             }
 
@@ -1767,7 +1961,7 @@
                     ? formatarQuantidadeInput(registro.prorrogacao) : '';
                 reemissaoInput.value = (registro.reemissao !== null && registro.reemissao !== undefined)
                     ? formatarQuantidadeInput(registro.reemissao) : '';
-                nfNfdInput.value = registro.nfNfd || ''; // NOVO
+                nfNfdInput.value = registro.nfNfd || '';
 
                 btnSalvar.innerHTML = '✏️ Atualizar Registro';
                 btnSalvar.className = 'btn btn-warning';
@@ -1787,6 +1981,8 @@
                 const badgeClass = getStatusBadgeClass(registro.andamento);
                 const statusIcon = getStatusIcon(registro.andamento);
                 const tempoTotal = calcularTempoTotal(registro);
+                const diasAberto = calcularDiasAberto(registro);
+                const emAlerta = isAlertaPrazo(registro);
 
                 const prorrogTexto = (registro.prorrogacao !== null && registro.prorrogacao !== undefined)
                     ? `${registro.prorrogacao} dia(s)` : '-';
@@ -1806,7 +2002,23 @@
                     htmlTimeline += '</div>';
                 }
 
+                // Bloco de alerta profissional (só se estiver em alerta)
+                const alertaHTML = emAlerta ? `
+                    <div class="alerta-prazo-box" style="grid-column: 1 / -1;">
+                        <div class="icon-alerta">⏰</div>
+                        <div class="texto-alerta">
+                            <div class="titulo">🚨 Alerta de Prazo Excedido</div>
+                            <div class="descricao">
+                                Esta reclamação está aberta há <strong>${diasAberto} dias</strong>.
+                                O prazo máximo de <strong>${DIAS_ALERTA_PRAZO} dias</strong> foi ultrapassado.
+                                Verifique o andamento e priorize a tratativa.
+                            </div>
+                        </div>
+                    </div>
+                ` : '';
+
                 modalContent.innerHTML = `
+                    ${alertaHTML}
                     <div class="modal-detail-item"><div class="label">Nº Registro</div><div class="value">#${registro.numRegistro}</div></div>
                     <div class="modal-detail-item"><div class="label">Cliente</div><div class="value">${registro.cliente || '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Data da Ocorrência</div><div class="value">${formatarData(registro.dataOcorrencia)}</div></div>
@@ -1850,7 +2062,7 @@
                         const campos = [
                             r.numRegistro, r.cliente, r.causaResumida, r.causaCompleta,
                             r.codItem, r.descricaoProduto, r.areaEnvolvida, r.andamento,
-                            r.nfNfd // NOVO — busca também pelo NF/Nfd
+                            r.nfNfd
                         ].join(' ').toLowerCase();
                         if (!campos.includes(busca)) return false;
                     }
@@ -1879,9 +2091,26 @@
                     const statusIcon = getStatusIcon(r.andamento);
                     const tempoTotal = calcularTempoTotal(r);
                     const bonif = parseFloat(r.bonificacao) || 0;
+                    const emAlerta = isAlertaPrazo(r);
+                    const diasAberto = calcularDiasAberto(r);
+
+                    // Aplica a classe de alerta na linha se estiver em atraso
+                    if (emAlerta) {
+                        tr.classList.add('row-alerta');
+                    }
+
+                    // Monta o badge de alerta ao lado do número do registro
+                    const badgeAlertaHTML = emAlerta
+                        ? `<span class="badge-prazo" title="Reclamação aberta há ${diasAberto} dias. Ultrapassou o prazo de ${DIAS_ALERTA_PRAZO} dias.">
+                                <span class="icon">⏰</span>${diasAberto} DIAS
+                           </span>`
+                        : '';
 
                     tr.innerHTML = `
-                        <td><strong>#${r.numRegistro}</strong></td>
+                        <td>
+                            <strong>#${r.numRegistro}</strong>
+                            ${badgeAlertaHTML}
+                        </td>
                         <td>${formatarData(r.dataOcorrencia)}</td>
                         <td>${r.cliente || '-'}</td>
                         <td>${r.areaEnvolvida || '-'}</td>
@@ -2210,10 +2439,13 @@
                     }
 
                     const dados = filtrarRegistrosDashboard();
-                    let totalPendentes = 0, totalConcluidos = 0, totalQtdReclamada = 0, totalBonificacao = 0;
+                    let totalPendentes = 0, totalConcluidos = 0, totalQtdReclamada = 0, totalBonificacao = 0, totalEmAtraso = 0;
                     dados.forEach(r => {
                         if (r.andamento === 'Concluído') totalConcluidos++;
-                        else totalPendentes++;
+                        else {
+                            totalPendentes++;
+                            if (isAlertaPrazo(r)) totalEmAtraso++;
+                        }
                         totalQtdReclamada += parseFloat(r.valorNFD) || 0;
                         totalBonificacao += parseFloat(r.bonificacao) || 0;
                     });
@@ -2272,6 +2504,18 @@
                                 <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Bonificação</div>
                             </div>
                         </div>
+
+                        ${totalEmAtraso > 0 ? `
+                        <div style="background: linear-gradient(135deg, #FFF3F3 0%, #FFEBEE 100%); border: 2px solid #E53935; border-left: 8px solid #E53935; border-radius: 12px; padding: 16px 20px; margin-bottom: 25px; display: flex; align-items: center; gap: 16px;">
+                            <div style="width: 52px; height: 52px; background: linear-gradient(135deg, #E53935 0%, #FF6B6B 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #fff; flex-shrink: 0;">⏰</div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 15px; font-weight: 800; color: #C62828; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">🚨 Alerta de Prazos</div>
+                                <div style="font-size: 13px; color: #B71C1C; font-weight: 600;">
+                                    Existem <strong style="color: #E53935; font-size: 16px;">${totalEmAtraso} reclamação(ões)</strong> com mais de ${DIAS_ALERTA_PRAZO} dias em aberto que precisam de atenção imediata.
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
 
                         <div id="pdfChartsWrap" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"></div>
                         <div style="margin-top: 24px; padding-top: 16px; border-top: 2px solid #E8EAF6; display: flex; justify-content: space-between; font-size: 10px; color: #5C5C8A;">
@@ -2520,6 +2764,14 @@
 
                     if (registros.length >= LIMITE_REGISTROS) {
                         mostrarToast(`Limite de ${LIMITE_REGISTROS} registros atingido. Considere arquivar antigos.`, 'warning');
+                    }
+
+                    // Aviso de alerta de prazo na inicialização
+                    const emAtraso = registros.filter(r => isAlertaPrazo(r)).length;
+                    if (emAtraso > 0) {
+                        setTimeout(() => {
+                            mostrarToast(`🚨 ${emAtraso} reclamação(ões) com mais de ${DIAS_ALERTA_PRAZO} dias em aberto. Verifique!`, 'alert-prazo');
+                        }, 800);
                     }
                 } catch (e) {
                     console.error('❌ Erro ao carregar do Firebase:', e);
