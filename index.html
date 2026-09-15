@@ -616,6 +616,25 @@
             border: 1.5px solid #90CAF9;
             box-shadow: 0 2px 8px rgba(60, 16, 83, 0.15);
         }
+        /* Novos badges */
+        .badge-liberacao {
+            background: #EDE7F6;
+            color: #5B2A86;
+            border: 1.5px solid #B39DDB;
+            box-shadow: 0 2px 8px rgba(91, 42, 134, 0.15);
+        }
+        .badge-fiscal {
+            background: #E8F5E9;
+            color: #2E7D32;
+            border: 1.5px solid #A5D6A7;
+            box-shadow: 0 2px 8px rgba(46, 125, 50, 0.15);
+        }
+        .badge-financeiro {
+            background: #E1F5FE;
+            color: #0277BD;
+            border: 1.5px solid #81D4FA;
+            box-shadow: 0 2px 8px rgba(2, 119, 189, 0.15);
+        }
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -1427,6 +1446,9 @@
                     case 'Cliente contabilizando': return 'badge-contabilizando';
                     case 'Enviar reposição': return 'badge-reposicao';
                     case 'Abertura da RNC': return 'badge-abertura';
+                    case 'Aguardando liberação': return 'badge-liberacao';
+                    case 'Aguardando fiscal da entrada': return 'badge-fiscal';
+                    case 'Aguardando financeiro': return 'badge-financeiro';
                     default: return '';
                 }
             }
@@ -1438,6 +1460,9 @@
                     case 'Cliente contabilizando': return '📊';
                     case 'Enviar reposição': return '📦';
                     case 'Abertura da RNC': return '🔓';
+                    case 'Aguardando liberação': return '🔐';
+                    case 'Aguardando fiscal da entrada': return '🧾';
+                    case 'Aguardando financeiro': return '💰';
                     default: return '•';
                 }
             }
@@ -1553,6 +1578,9 @@
             function popularSelectAndamento(modoEdicao = false, andamentoAtual = null) {
                 const opcoes = [
                     { valor: 'Abertura da RNC', texto: '🔓 Abertura da RNC' },
+                    { valor: 'Aguardando liberação', texto: '🔐 Aguardando liberação' },
+                    { valor: 'Aguardando fiscal da entrada', texto: '🧾 Aguardando fiscal da entrada' },
+                    { valor: 'Aguardando financeiro', texto: '💰 Aguardando financeiro' },
                     { valor: 'Aguardando nota de devolução', texto: '⏳ Aguardando nota de devolução' },
                     { valor: 'Cliente contabilizando', texto: '📊 Cliente contabilizando' },
                     { valor: 'Enviar reposição', texto: '📦 Enviar reposição' },
@@ -1917,7 +1945,6 @@
                 if (chartComparacaoValores) { chartComparacaoValores.destroy(); chartComparacaoValores = null; }
             }
 
-            // Opções reutilizáveis para datalabels de barras (evita sobreposição)
             const BAR_DATALABELS = {
                 anchor: 'end',
                 align: 'end',
@@ -1934,7 +1961,6 @@
                 destruirGraficos();
                 const dados = filtrarRegistrosDashboard();
 
-                // ---------- Gráfico Área (Pie) ----------
                 const areaMap = new Map();
                 dados.forEach(r => {
                     const area = r.areaEnvolvida || 'Não informada';
@@ -1981,7 +2007,6 @@
                     });
                 }
 
-                // ---------- Gráfico Produtos (Bar) ----------
                 const produtoMap = new Map();
                 dados.forEach(r => {
                     const nome = r.descricaoProduto || r.codItem || 'Sem identificação';
@@ -2027,7 +2052,6 @@
                     });
                 }
 
-                // ---------- Gráfico Motivos (Doughnut) ----------
                 const motivoMap = new Map();
                 dados.forEach(r => {
                     const motivo = r.causaResumida || 'Não informado';
@@ -2071,7 +2095,6 @@
                     });
                 }
 
-                // ---------- Gráfico Status (Bar) ----------
                 const abertas = dados.filter(r => r.andamento !== 'Concluído').length;
                 const concluidas = dados.filter(r => r.andamento === 'Concluído').length;
                 const ctxStatus = canvasStatus.getContext('2d');
@@ -2111,7 +2134,6 @@
                     }
                 });
 
-                // ---------- Gráfico Valores por Produto (Bar) ----------
                 const valoresMap = new Map();
                 dados.forEach(r => {
                     const produto = r.descricaoProduto || r.codItem || 'Sem identificação';
@@ -2180,7 +2202,6 @@
                     });
                 }
 
-                // ---------- Gráfico Comparação (Bar) ----------
                 const totalQtdReclamada = dados.reduce((acc, r) => acc + (parseFloat(r.valorNFD) || 0), 0);
                 const totalBonif = dados.reduce((acc, r) => acc + (parseFloat(r.bonificacao) || 0), 0);
                 const ctxComparacao = canvasComparacaoValores.getContext('2d');
@@ -2331,7 +2352,6 @@
                     document.body.appendChild(container);
                     const wrap = container.querySelector('#pdfChartsWrap');
 
-                    // Copia cada chart-container (com o gráfico renderizado como imagem)
                     const origCharts = document.querySelectorAll('#chartsGridDashboard .chart-container');
                     for (const chartBox of origCharts) {
                         const boxClone = document.createElement('div');
