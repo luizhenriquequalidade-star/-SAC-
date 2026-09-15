@@ -6,6 +6,9 @@
     <title>DONA RITA EMBALAGENS (SAC) - Sistema de Não Conformidades</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <!-- Bibliotecas para gerar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
     </script>
@@ -498,6 +501,15 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(60, 16, 83, 0.35);
         }
+        .btn-pdf {
+            background: linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(124, 58, 237, 0.45);
+        }
+        .btn-pdf:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(124, 58, 237, 0.65);
+        }
         .btn-sm { padding: 7px 13px; font-size: 0.75rem; border-radius: 7px; }
         .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
         .filter-bar {
@@ -729,7 +741,7 @@
             border-bottom: 1px solid #E8EAF6;
             padding-bottom: 8px;
         }
-        .chart-container canvas { max-height: 280px; max-width: 100%; }
+        .chart-container canvas { max-height: 300px; max-width: 100%; }
         @media (max-width: 768px) {
             .charts-grid { grid-template-columns: 1fr; }
         }
@@ -957,7 +969,6 @@
                             <textarea class="form-textarea" id="solucaoProblema" placeholder="Descreva a solução aplicada ou proposta..." rows="3"></textarea>
                         </div>
 
-                        <!-- ALTERADO: Valor da NFD (R$) → Quantidade Reclamada -->
                         <div class="form-group">
                             <label class="form-label">Quantidade Reclamada</label>
                             <input type="text" inputmode="numeric" class="form-input" id="valorNFD" placeholder="0">
@@ -968,13 +979,11 @@
                             <input type="text" inputmode="decimal" class="form-input" id="bonificacao" placeholder="0,00">
                         </div>
 
-                        <!-- CAMPO: Prorrogação (dias) -->
                         <div class="form-group">
                             <label class="form-label">Prorrogação (dias)</label>
                             <input type="text" inputmode="numeric" class="form-input" id="prorrogacao" placeholder="0">
                         </div>
 
-                        <!-- CAMPO: Reemissão (dias) -->
                         <div class="form-group">
                             <label class="form-label">Reemissão (dias)</label>
                             <input type="text" inputmode="numeric" class="form-input" id="reemissao" placeholder="0">
@@ -1066,9 +1075,12 @@
                     <button class="btn btn-outline btn-sm" id="btnLimparFiltrosDash" style="margin-bottom: 2px;">
                         ✖ Limpar Filtros
                     </button>
+                    <button class="btn btn-pdf btn-sm" id="btnGerarPDF" style="margin-bottom: 2px;">
+                        📄 Gerar PDF
+                    </button>
                 </div>
 
-                <div class="charts-grid">
+                <div class="charts-grid" id="chartsGridDashboard">
                     <div class="chart-container">
                         <h3>Ocorrência por Área</h3>
                         <canvas id="graficoArea"></canvas>
@@ -1090,7 +1102,7 @@
                         <canvas id="graficoValoresProdutos"></canvas>
                     </div>
                     <div class="chart-container">
-                        <h3>Comparação NFD vs Bonificação</h3>
+                        <h3>Comparação Quantidade Reclamada vs Bonificação</h3>
                         <canvas id="graficoComparacaoValores"></canvas>
                     </div>
                 </div>
@@ -1129,12 +1141,10 @@
                 measurementId: "G-XQ68RJKM19"
             };
 
-            // Inicializa Firebase
             firebase.initializeApp(firebaseConfig);
             const db = firebase.firestore();
             const COLLECTION_NAME = 'registros';
 
-            // Registra o plugin de DataLabels
             Chart.register(ChartDataLabels);
 
             // ==================== CONSTANTES E ESTADO ====================
@@ -1143,7 +1153,6 @@
             let registroSelecionado = null;
             let isLoading = false;
 
-            // Gráficos (referências para destruição)
             let chartArea = null;
             let chartProdutos = null;
             let chartMotivos = null;
@@ -1198,6 +1207,7 @@
             const dashFiltroData = document.getElementById('dashFiltroData');
             const dashFiltroMes = document.getElementById('dashFiltroMes');
             const btnLimparFiltrosDash = document.getElementById('btnLimparFiltrosDash');
+            const btnGerarPDF = document.getElementById('btnGerarPDF');
 
             const canvasArea = document.getElementById('graficoArea');
             const canvasProdutos = document.getElementById('graficoProdutos');
@@ -1209,7 +1219,7 @@
             const tabButtons = document.querySelectorAll('.tab-btn');
             const tabContents = document.querySelectorAll('.tab-content');
 
-            // ==================== LISTA DE PRODUTOS PARA AUTO-PREENCHIMENTO ====================
+            // ==================== LISTA DE PRODUTOS ====================
             const listaProdutos = [
                 { codigo: '100001', descricao: 'D32 R PR' },
                 { codigo: '100002', descricao: 'D32 R BR' },
@@ -1332,9 +1342,6 @@
             }
 
             // ==================== FUNÇÕES UTILITÁRIAS ====================
-
-            // Converte valores digitados em formato BR ou US para número.
-            // Aceita: "1.234,56" | "1234,56" | "1234.56" | "1.234" | "1234" | "0,5" | "0.5"
             function parseValorBR(valor) {
                 if (valor === null || valor === undefined) return null;
                 valor = String(valor).trim();
@@ -1344,31 +1351,25 @@
                 const temPonto = valor.includes('.');
 
                 if (temVirgula) {
-                    // Formato BR: pontos são milhares, vírgula é decimal
                     valor = valor.replace(/\./g, '').replace(',', '.');
                 } else if (temPonto) {
                     const partes = valor.split('.');
                     if (partes.length > 2) {
-                        // Múltiplos pontos = separadores de milhar (ex: 1.234.567 -> 1234567)
                         valor = partes.join('');
                     } else if (partes[1] && partes[1].length === 3) {
-                        // Um ponto seguido de 3 dígitos = milhar BR (ex: 1.234 -> 1234)
                         valor = partes.join('');
                     }
-                    // Caso contrário mantém o ponto como decimal (ex: 1234.56 -> 1234.56)
                 }
 
                 const num = parseFloat(valor);
                 return isNaN(num) ? null : num;
             }
 
-            // Formata um número para o formato brasileiro (ex: 1234.56 -> "1.234,56")
             function formatarValorInput(valor) {
                 if (valor === null || valor === undefined || isNaN(valor)) return '';
                 return Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
 
-            // Formata quantidade (inteiro) sem casas decimais
             function formatarQuantidadeInput(valor) {
                 if (valor === null || valor === undefined || isNaN(valor)) return '';
                 return Number(valor).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
@@ -1421,35 +1422,23 @@
 
             function getStatusBadgeClass(andamento) {
                 switch (andamento) {
-                    case 'Concluído':
-                        return 'badge-concluido';
-                    case 'Aguardando nota de devolução':
-                        return 'badge-aguardando';
-                    case 'Cliente contabilizando':
-                        return 'badge-contabilizando';
-                    case 'Enviar reposição':
-                        return 'badge-reposicao';
-                    case 'Abertura da RNC':
-                        return 'badge-abertura';
-                    default:
-                        return '';
+                    case 'Concluído': return 'badge-concluido';
+                    case 'Aguardando nota de devolução': return 'badge-aguardando';
+                    case 'Cliente contabilizando': return 'badge-contabilizando';
+                    case 'Enviar reposição': return 'badge-reposicao';
+                    case 'Abertura da RNC': return 'badge-abertura';
+                    default: return '';
                 }
             }
 
             function getStatusIcon(andamento) {
                 switch (andamento) {
-                    case 'Concluído':
-                        return '✅';
-                    case 'Aguardando nota de devolução':
-                        return '⏳';
-                    case 'Cliente contabilizando':
-                        return '📊';
-                    case 'Enviar reposição':
-                        return '📦';
-                    case 'Abertura da RNC':
-                        return '🔓';
-                    default:
-                        return '•';
+                    case 'Concluído': return '✅';
+                    case 'Aguardando nota de devolução': return '⏳';
+                    case 'Cliente contabilizando': return '📊';
+                    case 'Enviar reposição': return '📦';
+                    case 'Abertura da RNC': return '🔓';
+                    default: return '•';
                 }
             }
 
@@ -1481,7 +1470,7 @@
                 }
             }
 
-            // ==================== FUNÇÕES FIREBASE ====================
+            // ==================== FIREBASE ====================
             async function carregarRegistrosDoFirebase() {
                 try {
                     const querySnapshot = await db.collection(COLLECTION_NAME).get();
@@ -1489,7 +1478,6 @@
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
                         data.docId = doc.id;
-                        // Garante que campos novos existam
                         if (data.bonificacao === undefined) data.bonificacao = null;
                         if (data.prorrogacao === undefined) data.prorrogacao = null;
                         if (data.reemissao === undefined) data.reemissao = null;
@@ -1515,11 +1503,9 @@
             async function salvarRegistroNoFirebase(dados, docId = null) {
                 try {
                     if (docId) {
-                        // Atualizar documento existente
                         await db.collection(COLLECTION_NAME).doc(docId).update(dados);
                         return docId;
                     } else {
-                        // Criar novo documento
                         const docRef = await db.collection(COLLECTION_NAME).add(dados);
                         return docRef.id;
                     }
@@ -1615,7 +1601,6 @@
             }
 
             function coletarDadosFormulario() {
-                // Converte quantidade aceitando ponto e vírgula; arredonda para inteiro
                 const qtdRaw = qtdFaturadaInput.value.trim();
                 let qtd = null;
                 if (qtdRaw) {
@@ -1623,7 +1608,6 @@
                     if (qtdNum !== null) qtd = Math.round(qtdNum);
                 }
 
-                // Converte prorrogação (dias) aceitando ponto e vírgula; arredonda para inteiro
                 const prorrogRaw = prorrogacaoInput.value.trim();
                 let prorrog = null;
                 if (prorrogRaw) {
@@ -1631,7 +1615,6 @@
                     if (prorrogNum !== null) prorrog = Math.round(prorrogNum);
                 }
 
-                // Converte reemissão (dias) aceitando ponto e vírgula; arredonda para inteiro
                 const reemissaoRaw = reemissaoInput.value.trim();
                 let reemissao = null;
                 if (reemissaoRaw) {
@@ -1639,7 +1622,6 @@
                     if (reemissaoNum !== null) reemissao = Math.round(reemissaoNum);
                 }
 
-                // Converte quantidade reclamada (inteiro)
                 const qtdReclamadaRaw = valorNFDInput.value.trim();
                 let qtdReclamada = null;
                 if (qtdReclamadaRaw) {
@@ -1660,7 +1642,6 @@
                     qtdFaturada: qtd,
                     andamento: andamentoInput.value,
                     solucaoProblema: solucaoProblemaInput.value.trim(),
-                    // Campo "valorNFD" agora armazena a Quantidade Reclamada (inteiro)
                     valorNFD: qtdReclamada,
                     bonificacao: parseValorBR(bonificacaoInput.value),
                     prorrogacao: prorrog,
@@ -1669,41 +1650,13 @@
             }
 
             function validarFormulario(dados) {
-                if (!dados.numRegistro) {
-                    mostrarToast('O campo "Nº Registro" é obrigatório!', 'error');
-                    numRegistroInput.focus();
-                    return false;
-                }
-                if (!dados.cliente) {
-                    mostrarToast('O campo "Cliente" é obrigatório!', 'error');
-                    clienteInput.focus();
-                    return false;
-                }
-                if (!dados.dataOcorrencia) {
-                    mostrarToast('O campo "Data da Ocorrência" é obrigatório!', 'error');
-                    dataOcorrenciaInput.focus();
-                    return false;
-                }
-                if (!dados.areaEnvolvida) {
-                    mostrarToast('O campo "Área Envolvida" é obrigatório!', 'error');
-                    areaEnvolvidaInput.focus();
-                    return false;
-                }
-                if (!dados.causaResumida) {
-                    mostrarToast('O campo "Causa Resumida" é obrigatório!', 'error');
-                    causaResumidaInput.focus();
-                    return false;
-                }
-                if (!dados.causaCompleta) {
-                    mostrarToast('O campo "Causa do Problema (Completo)" é obrigatório!', 'error');
-                    causaCompletaInput.focus();
-                    return false;
-                }
-                if (!dados.andamento) {
-                    mostrarToast('O campo "Andamento" é obrigatório!', 'error');
-                    andamentoInput.focus();
-                    return false;
-                }
+                if (!dados.numRegistro) { mostrarToast('O campo "Nº Registro" é obrigatório!', 'error'); numRegistroInput.focus(); return false; }
+                if (!dados.cliente) { mostrarToast('O campo "Cliente" é obrigatório!', 'error'); clienteInput.focus(); return false; }
+                if (!dados.dataOcorrencia) { mostrarToast('O campo "Data da Ocorrência" é obrigatório!', 'error'); dataOcorrenciaInput.focus(); return false; }
+                if (!dados.areaEnvolvida) { mostrarToast('O campo "Área Envolvida" é obrigatório!', 'error'); areaEnvolvidaInput.focus(); return false; }
+                if (!dados.causaResumida) { mostrarToast('O campo "Causa Resumida" é obrigatório!', 'error'); causaResumidaInput.focus(); return false; }
+                if (!dados.causaCompleta) { mostrarToast('O campo "Causa do Problema (Completo)" é obrigatório!', 'error'); causaCompletaInput.focus(); return false; }
+                if (!dados.andamento) { mostrarToast('O campo "Andamento" é obrigatório!', 'error'); andamentoInput.focus(); return false; }
                 return true;
             }
 
@@ -1719,7 +1672,6 @@
 
                 try {
                     if (registroEmEdicao !== null) {
-                        // Atualizar registro existente
                         const idx = registros.indexOf(registroEmEdicao);
                         if (idx !== -1) {
                             const original = registros[idx];
@@ -1743,7 +1695,6 @@
                         }
                         registroEmEdicao = null;
                     } else {
-                        // Criar novo registro
                         const novoRegistro = {
                             ...dados,
                             dataAbertura: agora,
@@ -1755,7 +1706,6 @@
                         mostrarToast(`Registro #${dados.numRegistro} salvo com sucesso!`, 'success');
                     }
 
-                    // Recarregar do Firebase
                     await carregarRegistrosDoFirebase();
                     atualizarStats();
                     renderizarTabela();
@@ -1801,25 +1751,17 @@
                 causaCompletaInput.value = registro.causaCompleta;
                 codItemInput.value = registro.codItem || '';
                 descricaoProdutoInput.value = registro.descricaoProduto || '';
-                // Exibir quantidade aceitando ponto/vírgula
                 qtdFaturadaInput.value = (registro.qtdFaturada !== null && registro.qtdFaturada !== undefined)
-                    ? formatarQuantidadeInput(registro.qtdFaturada)
-                    : '';
+                    ? formatarQuantidadeInput(registro.qtdFaturada) : '';
                 popularSelectAndamento(true, registro.andamento);
                 solucaoProblemaInput.value = registro.solucaoProblema || '';
-                // Exibir Quantidade Reclamada (campo armazenado como valorNFD)
                 valorNFDInput.value = (registro.valorNFD !== null && registro.valorNFD !== undefined)
-                    ? formatarQuantidadeInput(registro.valorNFD)
-                    : '';
+                    ? formatarQuantidadeInput(registro.valorNFD) : '';
                 bonificacaoInput.value = formatarValorInput(registro.bonificacao);
-                // Exibir prorrogação (dias)
                 prorrogacaoInput.value = (registro.prorrogacao !== null && registro.prorrogacao !== undefined)
-                    ? formatarQuantidadeInput(registro.prorrogacao)
-                    : '';
-                // Exibir reemissão (dias)
+                    ? formatarQuantidadeInput(registro.prorrogacao) : '';
                 reemissaoInput.value = (registro.reemissao !== null && registro.reemissao !== undefined)
-                    ? formatarQuantidadeInput(registro.reemissao)
-                    : '';
+                    ? formatarQuantidadeInput(registro.reemissao) : '';
 
                 btnSalvar.innerHTML = '✏️ Atualizar Registro';
                 btnSalvar.className = 'btn btn-warning';
@@ -1843,12 +1785,10 @@
                     .valorTotal : (parseFloat(registro.valorNFD) || 0) + (parseFloat(registro.bonificacao) || 0);
 
                 const prorrogTexto = (registro.prorrogacao !== null && registro.prorrogacao !== undefined)
-                    ? `${registro.prorrogacao} dia(s)`
-                    : '-';
+                    ? `${registro.prorrogacao} dia(s)` : '-';
 
                 const reemissaoTexto = (registro.reemissao !== null && registro.reemissao !== undefined)
-                    ? `${registro.reemissao} dia(s)`
-                    : '-';
+                    ? `${registro.reemissao} dia(s)` : '-';
 
                 let htmlTimeline = '';
                 if (registro.historicoEtapas && registro.historicoEtapas.length > 0) {
@@ -1906,14 +1846,8 @@
                     if (mesFiltro && !r.dataOcorrencia.startsWith(mesFiltro)) passa = false;
                     if (busca) {
                         const buscaCampos = [
-                            r.numRegistro,
-                            r.cliente,
-                            r.causaResumida,
-                            r.causaCompleta,
-                            r.codItem,
-                            r.descricaoProduto,
-                            r.areaEnvolvida,
-                            r.andamento,
+                            r.numRegistro, r.cliente, r.causaResumida, r.causaCompleta,
+                            r.codItem, r.descricaoProduto, r.areaEnvolvida, r.andamento,
                         ].join(' ').toLowerCase();
                         if (!buscaCampos.includes(busca)) passa = false;
                     }
@@ -1962,7 +1896,7 @@
                 });
             }
 
-            // ==================== DASHBOARD (GRÁFICOS) ====================
+            // ==================== DASHBOARD ====================
             function filtrarRegistrosDashboard() {
                 const dataFiltro = dashFiltroData.value;
                 const mesFiltro = dashFiltroMes.value;
@@ -1983,10 +1917,24 @@
                 if (chartComparacaoValores) { chartComparacaoValores.destroy(); chartComparacaoValores = null; }
             }
 
+            // Opções reutilizáveis para datalabels de barras (evita sobreposição)
+            const BAR_DATALABELS = {
+                anchor: 'end',
+                align: 'end',
+                offset: 6,
+                clamp: true,
+                color: '#3C1053',
+                font: { weight: 'bold', size: 12 },
+                backgroundColor: 'rgba(255,255,255,0.85)',
+                borderRadius: 4,
+                padding: { top: 3, bottom: 3, left: 6, right: 6 },
+            };
+
             function renderizarDashboard() {
                 destruirGraficos();
                 const dados = filtrarRegistrosDashboard();
 
+                // ---------- Gráfico Área (Pie) ----------
                 const areaMap = new Map();
                 dados.forEach(r => {
                     const area = r.areaEnvolvida || 'Não informada';
@@ -1996,8 +1944,6 @@
                 const areaValores = Array.from(areaMap.values());
                 if (areaLabels.length > 0) {
                     const ctxArea = canvasArea.getContext('2d');
-                    
-                    // Paleta de cores para as fatias
                     const areaCores = [
                         '#7C3AED', '#A78BFA', '#5B2A86', '#3C1053',
                         '#F57C00', '#D32F2F', '#B8860B', '#1A6B9E',
@@ -2019,11 +1965,10 @@
                         options: {
                             responsive: true,
                             maintainAspectRatio: true,
+                            animation: false,
+                            layout: { padding: { top: 10, bottom: 10, left: 10, right: 10 } },
                             plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: { font: { size: 10 } }
-                                },
+                                legend: { position: 'bottom', labels: { font: { size: 10 } } },
                                 datalabels: {
                                     color: '#fff',
                                     font: { weight: 'bold', size: 14 },
@@ -2036,6 +1981,7 @@
                     });
                 }
 
+                // ---------- Gráfico Produtos (Bar) ----------
                 const produtoMap = new Map();
                 dados.forEach(r => {
                     const nome = r.descricaoProduto || r.codItem || 'Sem identificação';
@@ -2054,29 +2000,34 @@
                                 data: produtoValores,
                                 backgroundColor: '#A78BFA',
                                 borderColor: '#5B2A86',
-                                borderWidth: 1
+                                borderWidth: 1,
+                                borderRadius: 6
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: true,
+                            animation: false,
+                            layout: { padding: { top: 34, right: 10, left: 5, bottom: 5 } },
                             plugins: {
                                 legend: { display: false },
                                 datalabels: {
-                                    anchor: 'end',
-                                    align: 'end',
-                                    color: '#3C1053',
-                                    font: { weight: 'bold', size: 12 },
+                                    ...BAR_DATALABELS,
                                     formatter: (value) => value
                                 }
                             },
                             scales: {
-                                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { stepSize: 1, precision: 0 },
+                                    grace: '15%'
+                                }
                             }
                         }
                     });
                 }
 
+                // ---------- Gráfico Motivos (Doughnut) ----------
                 const motivoMap = new Map();
                 dados.forEach(r => {
                     const motivo = r.causaResumida || 'Não informado';
@@ -2104,11 +2055,10 @@
                         options: {
                             responsive: true,
                             maintainAspectRatio: true,
+                            animation: false,
+                            layout: { padding: { top: 10, bottom: 10, left: 10, right: 10 } },
                             plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: { font: { size: 10 } }
-                                },
+                                legend: { position: 'bottom', labels: { font: { size: 10 } } },
                                 datalabels: {
                                     color: '#fff',
                                     font: { weight: 'bold', size: 12 },
@@ -2121,6 +2071,7 @@
                     });
                 }
 
+                // ---------- Gráfico Status (Bar) ----------
                 const abertas = dados.filter(r => r.andamento !== 'Concluído').length;
                 const concluidas = dados.filter(r => r.andamento === 'Concluído').length;
                 const ctxStatus = canvasStatus.getContext('2d');
@@ -2133,28 +2084,34 @@
                             data: [abertas, concluidas],
                             backgroundColor: ['#F57C00', '#3C1053'],
                             borderColor: ['#E65100', '#1A0033'],
-                            borderWidth: 1
+                            borderWidth: 1,
+                            borderRadius: 6
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: true,
+                        animation: false,
+                        layout: { padding: { top: 34, right: 10, left: 5, bottom: 5 } },
                         plugins: {
                             legend: { display: false },
                             datalabels: {
-                                anchor: 'end',
-                                align: 'end',
-                                color: '#3C1053',
+                                ...BAR_DATALABELS,
                                 font: { weight: 'bold', size: 14 },
                                 formatter: (value) => value
                             }
                         },
                         scales: {
-                            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1, precision: 0 },
+                                grace: '15%'
+                            }
                         }
                     }
                 });
 
+                // ---------- Gráfico Valores por Produto (Bar) ----------
                 const valoresMap = new Map();
                 dados.forEach(r => {
                     const produto = r.descricaoProduto || r.codItem || 'Sem identificação';
@@ -2176,20 +2133,26 @@
                                 data: valoresValores,
                                 backgroundColor: '#3C1053',
                                 borderColor: '#1A0033',
-                                borderWidth: 1
+                                borderWidth: 1,
+                                borderRadius: 6
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: true,
+                            animation: false,
+                            layout: { padding: { top: 38, right: 12, left: 8, bottom: 5 } },
                             plugins: {
                                 legend: { display: false },
                                 datalabels: {
-                                    anchor: 'end',
-                                    align: 'end',
-                                    color: '#3C1053',
-                                    font: { weight: 'bold', size: 12 },
-                                    formatter: (value) => value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+                                    ...BAR_DATALABELS,
+                                    font: { weight: 'bold', size: 11 },
+                                    formatter: (value) => {
+                                        const v = Number(value) || 0;
+                                        if (v >= 1000000) return (v / 1000000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + 'M';
+                                        if (v >= 1000) return (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'k';
+                                        return v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+                                    }
                                 },
                                 tooltip: {
                                     callbacks: {
@@ -2201,13 +2164,23 @@
                                 }
                             },
                             scales: {
-                                y: { beginAtZero: true }
+                                y: {
+                                    beginAtZero: true,
+                                    grace: '18%',
+                                    ticks: {
+                                        callback: function(value) {
+                                            if (value >= 1000000) return (value / 1000000) + 'M';
+                                            if (value >= 1000) return (value / 1000) + 'k';
+                                            return value;
+                                        }
+                                    }
+                                }
                             }
                         }
                     });
                 }
 
-                // GRÁFICO: Comparação Quantidade Reclamada vs Bonificação
+                // ---------- Gráfico Comparação (Bar) ----------
                 const totalQtdReclamada = dados.reduce((acc, r) => acc + (parseFloat(r.valorNFD) || 0), 0);
                 const totalBonif = dados.reduce((acc, r) => acc + (parseFloat(r.bonificacao) || 0), 0);
                 const ctxComparacao = canvasComparacaoValores.getContext('2d');
@@ -2220,20 +2193,26 @@
                             data: [totalQtdReclamada, totalBonif],
                             backgroundColor: ['#3C1053', '#7C3AED'],
                             borderColor: ['#1A0033', '#5B2A86'],
-                            borderWidth: 1
+                            borderWidth: 1,
+                            borderRadius: 6
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: true,
+                        animation: false,
+                        layout: { padding: { top: 38, right: 12, left: 8, bottom: 5 } },
                         plugins: {
                             legend: { display: false },
                             datalabels: {
-                                anchor: 'end',
-                                align: 'end',
-                                color: '#3C1053',
-                                font: { weight: 'bold', size: 14 },
-                                formatter: (value) => value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+                                ...BAR_DATALABELS,
+                                font: { weight: 'bold', size: 13 },
+                                formatter: (value) => {
+                                    const v = Number(value) || 0;
+                                    if (v >= 1000000) return (v / 1000000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + 'M';
+                                    if (v >= 1000) return (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'k';
+                                    return v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+                                }
                             },
                             tooltip: {
                                 callbacks: {
@@ -2244,10 +2223,234 @@
                             }
                         },
                         scales: {
-                            y: { beginAtZero: true }
+                            y: {
+                                beginAtZero: true,
+                                grace: '18%',
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value >= 1000000) return (value / 1000000) + 'M';
+                                        if (value >= 1000) return (value / 1000) + 'k';
+                                        return value;
+                                    }
+                                }
+                            }
                         }
                     }
                 });
+            }
+
+            // ==================== GERAR PDF DO DASHBOARD ====================
+            async function gerarPDFDashboard() {
+                const originalText = btnGerarPDF.innerHTML;
+                btnGerarPDF.disabled = true;
+                btnGerarPDF.innerHTML = '<span class="loading-indicator"></span> Gerando...';
+
+                try {
+                    const dataFiltro = dashFiltroData.value;
+                    const mesFiltro = dashFiltroMes.value;
+                    let filtroTexto = 'Todos os registros';
+                    if (dataFiltro) {
+                        filtroTexto = `Dia: ${formatarData(dataFiltro)}`;
+                    } else if (mesFiltro) {
+                        const [ano, mes] = mesFiltro.split('-');
+                        const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                                       'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+                        filtroTexto = `Mês: ${meses[parseInt(mes, 10) - 1]}/${ano}`;
+                    }
+
+                    const dados = filtrarRegistrosDashboard();
+                    const totalPendentes = dados.filter(r => r.andamento !== 'Concluído').length;
+                    const totalConcluidos = dados.filter(r => r.andamento === 'Concluído').length;
+                    const totalQtdReclamada = dados.reduce((acc, r) => acc + (parseFloat(r.valorNFD) || 0), 0);
+                    const totalBonificacao = dados.reduce((acc, r) => acc + (parseFloat(r.bonificacao) || 0), 0);
+
+                    const agora = new Date();
+                    const dataGeracao = agora.toLocaleDateString('pt-BR') + ' às ' +
+                        agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                    const container = document.createElement('div');
+                    container.style.position = 'fixed';
+                    container.style.left = '-99999px';
+                    container.style.top = '0';
+                    container.style.width = '1240px';
+                    container.style.background = '#ffffff';
+                    container.style.padding = '40px';
+                    container.style.fontFamily = "'Segoe UI', sans-serif";
+                    container.style.color = '#1A1A2E';
+                    container.style.boxSizing = 'border-box';
+
+                    const htmlHeader = `
+                        <div style="border-bottom: 4px solid #7C3AED; padding-bottom: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #3C1053 0%, #7C3AED 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 34px; color: #fff;">📦</div>
+                                <div>
+                                    <div style="font-size: 26px; font-weight: 800; color: #3C1053; letter-spacing: 0.5px;">DONA RITA EMBALAGENS</div>
+                                    <div style="font-size: 12px; font-weight: 700; color: #7C3AED; letter-spacing: 2px;">SAC · RELATÓRIO DO DASHBOARD</div>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 11px; color: #5C5C8A; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Gerado em</div>
+                                <div style="font-size: 14px; font-weight: 700; color: #1A1A2E; margin-bottom: 6px;">${dataGeracao}</div>
+                                <div style="font-size: 11px; color: #5C5C8A; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Filtro Aplicado</div>
+                                <div style="font-size: 14px; font-weight: 700; color: #1A1A2E;">${filtroTexto}</div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 25px;">
+                            <div style="background: linear-gradient(135deg, #3C1053 0%, #5B2A86 100%); color: #fff; padding: 14px 10px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 800;">${dados.length}</div>
+                                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Total Registros</div>
+                            </div>
+                            <div style="background: linear-gradient(135deg, #E65100 0%, #F57C00 100%); color: #fff; padding: 14px 10px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 800;">${totalPendentes}</div>
+                                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Pendentes</div>
+                            </div>
+                            <div style="background: linear-gradient(135deg, #388E3C 0%, #4CAF50 100%); color: #fff; padding: 14px 10px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 800;">${totalConcluidos}</div>
+                                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Concluídos</div>
+                            </div>
+                            <div style="background: linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%); color: #fff; padding: 14px 10px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 800;">${totalQtdReclamada.toLocaleString('pt-BR')}</div>
+                                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Qtd. Reclamada</div>
+                            </div>
+                            <div style="background: linear-gradient(135deg, #1A0033 0%, #3C1053 100%); color: #fff; padding: 14px 10px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 18px; font-weight: 800;">R$ ${totalBonificacao.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Bonificação</div>
+                            </div>
+                        </div>
+                    `;
+
+                    container.innerHTML = htmlHeader + `
+                        <div id="pdfChartsWrap" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"></div>
+                        <div style="margin-top: 24px; padding-top: 16px; border-top: 2px solid #E8EAF6; display: flex; justify-content: space-between; font-size: 10px; color: #5C5C8A;">
+                            <span>DONA RITA EMBALAGENS · Sistema SAC</span>
+                            <span>Relatório gerado automaticamente · ${dataGeracao}</span>
+                        </div>
+                    `;
+
+                    document.body.appendChild(container);
+                    const wrap = container.querySelector('#pdfChartsWrap');
+
+                    // Copia cada chart-container (com o gráfico renderizado como imagem)
+                    const origCharts = document.querySelectorAll('#chartsGridDashboard .chart-container');
+                    for (const chartBox of origCharts) {
+                        const boxClone = document.createElement('div');
+                        boxClone.style.background = '#FAFAFE';
+                        boxClone.style.padding = '16px';
+                        boxClone.style.borderRadius = '12px';
+                        boxClone.style.border = '1.5px solid #C5CAE9';
+                        boxClone.style.boxSizing = 'border-box';
+                        boxClone.style.overflow = 'hidden';
+
+                        const titulo = chartBox.querySelector('h3');
+                        const tituloClone = document.createElement('div');
+                        tituloClone.style.fontSize = '13px';
+                        tituloClone.style.fontWeight = '800';
+                        tituloClone.style.color = '#3C1053';
+                        tituloClone.style.textAlign = 'center';
+                        tituloClone.style.textTransform = 'uppercase';
+                        tituloClone.style.letterSpacing = '0.8px';
+                        tituloClone.style.borderBottom = '1px solid #E8EAF6';
+                        tituloClone.style.paddingBottom = '8px';
+                        tituloClone.style.marginBottom = '12px';
+                        tituloClone.textContent = titulo ? titulo.textContent : '';
+                        boxClone.appendChild(tituloClone);
+
+                        const canvasOrig = chartBox.querySelector('canvas');
+                        if (canvasOrig) {
+                            const img = document.createElement('img');
+                            try {
+                                const tmpCanvas = document.createElement('canvas');
+                                tmpCanvas.width = canvasOrig.width;
+                                tmpCanvas.height = canvasOrig.height;
+                                const tctx = tmpCanvas.getContext('2d');
+                                tctx.fillStyle = '#FFFFFF';
+                                tctx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
+                                tctx.drawImage(canvasOrig, 0, 0);
+                                img.src = tmpCanvas.toDataURL('image/png');
+                            } catch (err) {
+                                img.src = canvasOrig.toDataURL('image/png');
+                            }
+                            img.style.width = '100%';
+                            img.style.height = 'auto';
+                            img.style.display = 'block';
+                            img.style.maxHeight = '300px';
+                            img.style.objectFit = 'contain';
+                            boxClone.appendChild(img);
+                        }
+
+                        wrap.appendChild(boxClone);
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    const canvas = await html2canvas(container, {
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: '#ffffff',
+                        logging: false,
+                        windowWidth: 1240,
+                    });
+
+                    const imgData = canvas.toDataURL('image/png');
+
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+                    const pageWidth = pdf.internal.pageSize.getWidth();
+                    const pageHeight = pdf.internal.pageSize.getHeight();
+                    const margin = 8;
+                    const imgWidth = pageWidth - margin * 2;
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    const pageContentHeight = pageHeight - margin * 2;
+
+                    if (imgHeight <= pageContentHeight) {
+                        pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+                    } else {
+                        const pageHeightPx = Math.floor((pageContentHeight / imgWidth) * canvas.width);
+                        const sliceCanvas = document.createElement('canvas');
+                        sliceCanvas.width = canvas.width;
+                        const sliceCtx = sliceCanvas.getContext('2d');
+
+                        let yOffset = 0;
+                        let pageNum = 0;
+
+                        while (yOffset < canvas.height) {
+                            const remaining = canvas.height - yOffset;
+                            const sliceH = Math.min(pageHeightPx, remaining);
+
+                            sliceCanvas.height = sliceH;
+                            sliceCtx.clearRect(0, 0, sliceCanvas.width, sliceH);
+                            sliceCtx.fillStyle = '#FFFFFF';
+                            sliceCtx.fillRect(0, 0, sliceCanvas.width, sliceH);
+                            sliceCtx.drawImage(canvas, 0, yOffset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+
+                            const sliceImg = sliceCanvas.toDataURL('image/png');
+                            const sliceImgHeight = (sliceH * imgWidth) / canvas.width;
+
+                            if (pageNum > 0) pdf.addPage();
+                            pdf.addImage(sliceImg, 'PNG', margin, margin, imgWidth, sliceImgHeight);
+
+                            yOffset += sliceH;
+                            pageNum++;
+                        }
+                    }
+
+                    const sufixoData = dataFiltro || mesFiltro || 'Completo';
+                    const nomeArquivo = `Dashboard_SAC_${sufixoData}_${agora.toISOString().split('T')[0]}.pdf`;
+                    pdf.save(nomeArquivo);
+
+                    document.body.removeChild(container);
+                    mostrarToast('PDF do dashboard gerado com sucesso!', 'success');
+                } catch (err) {
+                    console.error('Erro ao gerar PDF:', err);
+                    mostrarToast('Erro ao gerar PDF. Tente novamente.', 'error');
+                    const leftover = document.querySelector('div[style*="-99999px"]');
+                    if (leftover && leftover.parentNode === document.body) document.body.removeChild(leftover);
+                } finally {
+                    btnGerarPDF.disabled = false;
+                    btnGerarPDF.innerHTML = originalText;
+                }
             }
 
             // ==================== ABAS ====================
@@ -2300,6 +2503,8 @@
                 renderizarDashboard();
                 mostrarToast('Filtros do dashboard removidos!', 'warning');
             });
+
+            btnGerarPDF.addEventListener('click', gerarPDFDashboard);
 
             // ==================== AUTO-PREENCHIMENTO CÓDIGO ↔ DESCRIÇÃO ====================
             codItemInput.addEventListener('input', function() {
@@ -2377,7 +2582,6 @@
                 } catch (e) {
                     console.error('❌ Erro ao carregar do Firebase:', e);
                     mostrarToast('Erro ao carregar dados do Firebase! Verifique sua conexão.', 'error');
-                    // Carrega vazio
                     registros = [];
                     atualizarStats();
                     preencherDatalistDescricao();
