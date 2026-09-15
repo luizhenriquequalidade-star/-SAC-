@@ -616,7 +616,6 @@
             border: 1.5px solid #90CAF9;
             box-shadow: 0 2px 8px rgba(60, 16, 83, 0.15);
         }
-        /* Novos badges */
         .badge-liberacao {
             background: #EDE7F6;
             color: #5B2A86;
@@ -972,8 +971,8 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Quantidade Faturada</label>
-                            <input type="text" inputmode="decimal" class="form-input" id="qtdFaturada" placeholder="0">
+                            <label class="form-label">Quantidade Reclamada</label>
+                            <input type="text" inputmode="numeric" class="form-input" id="valorNFD" placeholder="0">
                         </div>
 
                         <div class="form-group">
@@ -986,11 +985,6 @@
                         <div class="form-group full-width">
                             <label class="form-label">Solução do Problema</label>
                             <textarea class="form-textarea" id="solucaoProblema" placeholder="Descreva a solução aplicada ou proposta..." rows="3"></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Quantidade Reclamada</label>
-                            <input type="text" inputmode="numeric" class="form-input" id="valorNFD" placeholder="0">
                         </div>
 
                         <div class="form-group">
@@ -1105,7 +1099,7 @@
                         <canvas id="graficoArea"></canvas>
                     </div>
                     <div class="chart-container">
-                        <h3>Quantidades Reclamadas por Produto</h3>
+                        <h3>Quantidade Reclamada por Produto</h3>
                         <canvas id="graficoProdutos"></canvas>
                     </div>
                     <div class="chart-container">
@@ -1117,7 +1111,7 @@
                         <canvas id="graficoStatus"></canvas>
                     </div>
                     <div class="chart-container">
-                        <h3>Valores de Devolução + Bonificação por Produto</h3>
+                        <h3>Bonificação por Produto (R$)</h3>
                         <canvas id="graficoValoresProdutos"></canvas>
                     </div>
                     <div class="chart-container">
@@ -1190,7 +1184,6 @@
             const causaCompletaInput = document.getElementById('causaCompleta');
             const codItemInput = document.getElementById('codItem');
             const descricaoProdutoInput = document.getElementById('descricaoProduto');
-            const qtdFaturadaInput = document.getElementById('qtdFaturada');
             const andamentoInput = document.getElementById('andamento');
             const solucaoProblemaInput = document.getElementById('solucaoProblema');
             const valorNFDInput = document.getElementById('valorNFD');
@@ -1575,6 +1568,7 @@
                 return fim - inicio;
             }
 
+            // ALTERAÇÃO: agora TODAS as opções aparecem SEMPRE (registro novo ou edição)
             function popularSelectAndamento(modoEdicao = false, andamentoAtual = null) {
                 const opcoes = [
                     { valor: 'Abertura da RNC', texto: '🔓 Abertura da RNC' },
@@ -1588,20 +1582,18 @@
                 ];
 
                 andamentoInput.innerHTML = '';
-                if (!modoEdicao) {
-                    const opt = document.createElement('option');
-                    opt.value = 'Abertura da RNC';
-                    opt.textContent = '🔓 Abertura da RNC';
-                    opt.selected = true;
-                    andamentoInput.appendChild(opt);
-                    return;
-                }
+
+                // Define qual valor deve estar selecionado
+                // Se for edição e tiver andamentoAtual, usa ele. Senão, usa 'Abertura da RNC'.
+                const valorSelecionado = (modoEdicao && andamentoAtual)
+                    ? andamentoAtual
+                    : 'Abertura da RNC';
 
                 opcoes.forEach(op => {
                     const opt = document.createElement('option');
                     opt.value = op.valor;
                     opt.textContent = op.texto;
-                    if (andamentoAtual && op.valor === andamentoAtual) {
+                    if (op.valor === valorSelecionado) {
                         opt.selected = true;
                     }
                     andamentoInput.appendChild(opt);
@@ -1618,7 +1610,6 @@
                 bonificacaoInput.value = '';
                 prorrogacaoInput.value = '';
                 reemissaoInput.value = '';
-                qtdFaturadaInput.value = '';
                 codItemInput.value = '';
                 descricaoProdutoInput.value = '';
                 registroEmEdicao = null;
@@ -1629,13 +1620,6 @@
             }
 
             function coletarDadosFormulario() {
-                const qtdRaw = qtdFaturadaInput.value.trim();
-                let qtd = null;
-                if (qtdRaw) {
-                    const qtdNum = parseValorBR(qtdRaw);
-                    if (qtdNum !== null) qtd = Math.round(qtdNum);
-                }
-
                 const prorrogRaw = prorrogacaoInput.value.trim();
                 let prorrog = null;
                 if (prorrogRaw) {
@@ -1667,7 +1651,6 @@
                     causaCompleta: causaCompletaInput.value.trim(),
                     codItem: codItemInput.value.trim(),
                     descricaoProduto: descricaoProdutoInput.value.trim(),
-                    qtdFaturada: qtd,
                     andamento: andamentoInput.value,
                     solucaoProblema: solucaoProblemaInput.value.trim(),
                     valorNFD: qtdReclamada,
@@ -1727,7 +1710,7 @@
                             ...dados,
                             dataAbertura: agora,
                             historicoEtapas: [
-                                { etapa: 'Abertura da RNC', timestamp: agora }
+                                { etapa: dados.andamento || 'Abertura da RNC', timestamp: agora }
                             ]
                         };
                         await salvarRegistroNoFirebase(novoRegistro);
@@ -1779,8 +1762,6 @@
                 causaCompletaInput.value = registro.causaCompleta;
                 codItemInput.value = registro.codItem || '';
                 descricaoProdutoInput.value = registro.descricaoProduto || '';
-                qtdFaturadaInput.value = (registro.qtdFaturada !== null && registro.qtdFaturada !== undefined)
-                    ? formatarQuantidadeInput(registro.qtdFaturada) : '';
                 popularSelectAndamento(true, registro.andamento);
                 solucaoProblemaInput.value = registro.solucaoProblema || '';
                 valorNFDInput.value = (registro.valorNFD !== null && registro.valorNFD !== undefined)
@@ -1809,8 +1790,6 @@
                 const badgeClass = getStatusBadgeClass(registro.andamento);
                 const statusIcon = getStatusIcon(registro.andamento);
                 const tempoTotal = calcularTempoTotal(registro);
-                const valorTotal = registro.valorTotal !== null && registro.valorTotal !== undefined ? registro
-                    .valorTotal : (parseFloat(registro.valorNFD) || 0) + (parseFloat(registro.bonificacao) || 0);
 
                 const prorrogTexto = (registro.prorrogacao !== null && registro.prorrogacao !== undefined)
                     ? `${registro.prorrogacao} dia(s)` : '-';
@@ -1842,12 +1821,10 @@
                     <div class="modal-detail-item"><div class="label">Tempo Total</div><div class="value">${formatarDuracao(tempoTotal)}</div></div>
                     <div class="modal-detail-item"><div class="label">Código do Item</div><div class="value">${registro.codItem || '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Descrição do Produto</div><div class="value">${registro.descricaoProduto || '-'}</div></div>
-                    <div class="modal-detail-item"><div class="label">Quantidade Faturada</div><div class="value">${registro.qtdFaturada !== null && registro.qtdFaturada !== undefined ? registro.qtdFaturada : '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Quantidade Reclamada</div><div class="value">${registro.valorNFD !== null && registro.valorNFD !== undefined ? registro.valorNFD : '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Bonificação</div><div class="value">${formatarValor(registro.bonificacao)}</div></div>
                     <div class="modal-detail-item"><div class="label">Prorrogação</div><div class="value">${prorrogTexto}</div></div>
                     <div class="modal-detail-item"><div class="label">Reemissão</div><div class="value">${reemissaoTexto}</div></div>
-                    <div class="modal-detail-item"><div class="label">Valor Total</div><div class="value">${formatarValor(valorTotal)}</div></div>
                     <div class="modal-detail-item full"><div class="label">Causa Resumida</div><div class="value">${registro.causaResumida || '-'}</div></div>
                     <div class="modal-detail-item full"><div class="label">Causa do Problema (Completo)</div><div class="value">${registro.causaCompleta || '-'}</div></div>
                     <div class="modal-detail-item full"><div class="label">Solução do Problema</div><div class="value">${registro.solucaoProblema || 'Não informada'}</div></div>
@@ -1899,8 +1876,7 @@
                     const badgeClass = getStatusBadgeClass(r.andamento);
                     const statusIcon = getStatusIcon(r.andamento);
                     const tempoTotal = calcularTempoTotal(r);
-                    const valorTotal = r.valorTotal !== null && r.valorTotal !== undefined ? r.valorTotal :
-                        (parseFloat(r.valorNFD) || 0) + (parseFloat(r.bonificacao) || 0);
+                    const valorBonif = (parseFloat(r.bonificacao) || 0);
 
                     tr.innerHTML = `
                         <td><strong>#${r.numRegistro}</strong></td>
@@ -1911,7 +1887,7 @@
                         <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${r.causaResumida}">${r.causaResumida || '-'}</td>
                         <td><span class="badge ${badgeClass}">${statusIcon} ${r.andamento}</span></td>
                         <td>${formatarDuracao(tempoTotal)}</td>
-                        <td>${formatarValor(valorTotal)}</td>
+                        <td>${formatarValor(valorBonif)}</td>
                         <td>
                             <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                                 <button class="btn btn-outline btn-sm" onclick="window.verDetalhes(${idxReal})" title="Ver detalhes">👁️</button>
@@ -1961,6 +1937,7 @@
                 destruirGraficos();
                 const dados = filtrarRegistrosDashboard();
 
+                // ---------- Gráfico Área (Pie) ----------
                 const areaMap = new Map();
                 dados.forEach(r => {
                     const area = r.areaEnvolvida || 'Não informada';
@@ -2007,10 +1984,12 @@
                     });
                 }
 
+                // ---------- Gráfico Quantidade Reclamada por Produto (Bar) ----------
                 const produtoMap = new Map();
                 dados.forEach(r => {
                     const nome = r.descricaoProduto || r.codItem || 'Sem identificação';
-                    produtoMap.set(nome, (produtoMap.get(nome) || 0) + 1);
+                    const qtd = parseFloat(r.valorNFD) || 0;
+                    produtoMap.set(nome, (produtoMap.get(nome) || 0) + qtd);
                 });
                 const produtoLabels = Array.from(produtoMap.keys());
                 const produtoValores = Array.from(produtoMap.values());
@@ -2021,7 +2000,7 @@
                         data: {
                             labels: produtoLabels,
                             datasets: [{
-                                label: 'Ocorrências',
+                                label: 'Qtd. Reclamada',
                                 data: produtoValores,
                                 backgroundColor: '#A78BFA',
                                 borderColor: '#5B2A86',
@@ -2038,13 +2017,13 @@
                                 legend: { display: false },
                                 datalabels: {
                                     ...BAR_DATALABELS,
-                                    formatter: (value) => value
+                                    formatter: (value) => Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 0 })
                                 }
                             },
                             scales: {
                                 y: {
                                     beginAtZero: true,
-                                    ticks: { stepSize: 1, precision: 0 },
+                                    ticks: { precision: 0 },
                                     grace: '15%'
                                 }
                             }
@@ -2052,6 +2031,7 @@
                     });
                 }
 
+                // ---------- Gráfico Motivos (Doughnut) ----------
                 const motivoMap = new Map();
                 dados.forEach(r => {
                     const motivo = r.causaResumida || 'Não informado';
@@ -2095,6 +2075,7 @@
                     });
                 }
 
+                // ---------- Gráfico Status (Bar) ----------
                 const abertas = dados.filter(r => r.andamento !== 'Concluído').length;
                 const concluidas = dados.filter(r => r.andamento === 'Concluído').length;
                 const ctxStatus = canvasStatus.getContext('2d');
@@ -2134,25 +2115,24 @@
                     }
                 });
 
-                const valoresMap = new Map();
+                // ---------- Gráfico Bonificação por Produto (Bar) ----------
+                const bonifMap = new Map();
                 dados.forEach(r => {
                     const produto = r.descricaoProduto || r.codItem || 'Sem identificação';
-                    const valor = (r.valorTotal !== null && r.valorTotal !== undefined) ?
-                        parseFloat(r.valorTotal) :
-                        (parseFloat(r.valorNFD) || 0) + (parseFloat(r.bonificacao) || 0);
-                    valoresMap.set(produto, (valoresMap.get(produto) || 0) + valor);
+                    const valor = parseFloat(r.bonificacao) || 0;
+                    bonifMap.set(produto, (bonifMap.get(produto) || 0) + valor);
                 });
-                const valoresLabels = Array.from(valoresMap.keys());
-                const valoresValores = Array.from(valoresMap.values());
-                if (valoresLabels.length > 0) {
+                const bonifLabels = Array.from(bonifMap.keys());
+                const bonifValores = Array.from(bonifMap.values());
+                if (bonifLabels.length > 0) {
                     const ctxValores = canvasValoresProdutos.getContext('2d');
                     chartValoresProdutos = new Chart(ctxValores, {
                         type: 'bar',
                         data: {
-                            labels: valoresLabels,
+                            labels: bonifLabels,
                             datasets: [{
-                                label: 'Valor Total (R$)',
-                                data: valoresValores,
+                                label: 'Bonificação (R$)',
+                                data: bonifValores,
                                 backgroundColor: '#3C1053',
                                 borderColor: '#1A0033',
                                 borderWidth: 1,
@@ -2202,6 +2182,7 @@
                     });
                 }
 
+                // ---------- Gráfico Comparação (Bar) ----------
                 const totalQtdReclamada = dados.reduce((acc, r) => acc + (parseFloat(r.valorNFD) || 0), 0);
                 const totalBonif = dados.reduce((acc, r) => acc + (parseFloat(r.bonificacao) || 0), 0);
                 const ctxComparacao = canvasComparacaoValores.getContext('2d');
@@ -2590,7 +2571,6 @@
                     bonificacaoInput.value = '';
                     prorrogacaoInput.value = '';
                     reemissaoInput.value = '';
-                    qtdFaturadaInput.value = '';
                     codItemInput.value = '';
                     descricaoProdutoInput.value = '';
                     preencherDatalistDescricao();
