@@ -940,7 +940,6 @@
                             <datalist id="listaDescricaoProdutos"></datalist>
                         </div>
 
-                        <!-- ALTERAÇÃO: aceita ponto e vírgula -->
                         <div class="form-group">
                             <label class="form-label">Quantidade Faturada</label>
                             <input type="text" inputmode="decimal" class="form-input" id="qtdFaturada" placeholder="0">
@@ -958,16 +957,26 @@
                             <textarea class="form-textarea" id="solucaoProblema" placeholder="Descreva a solução aplicada ou proposta..." rows="3"></textarea>
                         </div>
 
-                        <!-- ALTERAÇÃO: aceita ponto e vírgula -->
                         <div class="form-group">
                             <label class="form-label">Valor da NFD (R$)</label>
                             <input type="text" inputmode="decimal" class="form-input" id="valorNFD" placeholder="0,00">
                         </div>
 
-                        <!-- ALTERAÇÃO: aceita ponto e vírgula -->
                         <div class="form-group">
                             <label class="form-label">Bonificação (R$)</label>
                             <input type="text" inputmode="decimal" class="form-input" id="bonificacao" placeholder="0,00">
+                        </div>
+
+                        <!-- CAMPO: Prorrogação (dias) -->
+                        <div class="form-group">
+                            <label class="form-label">Prorrogação (dias)</label>
+                            <input type="text" inputmode="numeric" class="form-input" id="prorrogacao" placeholder="0">
+                        </div>
+
+                        <!-- CAMPO: Reemissão (dias) -->
+                        <div class="form-group">
+                            <label class="form-label">Reemissão (dias)</label>
+                            <input type="text" inputmode="numeric" class="form-input" id="reemissao" placeholder="0">
                         </div>
 
                         <div class="form-group full-width">
@@ -1157,6 +1166,8 @@
             const solucaoProblemaInput = document.getElementById('solucaoProblema');
             const valorNFDInput = document.getElementById('valorNFD');
             const bonificacaoInput = document.getElementById('bonificacao');
+            const prorrogacaoInput = document.getElementById('prorrogacao');
+            const reemissaoInput = document.getElementById('reemissao');
 
             const btnSalvar = document.getElementById('btnSalvar');
             const btnLimpar = document.getElementById('btnLimpar');
@@ -1479,6 +1490,8 @@
                         data.docId = doc.id;
                         // Garante que campos novos existam
                         if (data.bonificacao === undefined) data.bonificacao = null;
+                        if (data.prorrogacao === undefined) data.prorrogacao = null;
+                        if (data.reemissao === undefined) data.reemissao = null;
                         if (data.valorTotal === undefined) {
                             const nfd = parseFloat(data.valorNFD) || 0;
                             const bonif = parseFloat(data.bonificacao) || 0;
@@ -1588,6 +1601,8 @@
                 popularSelectAndamento(false);
                 valorNFDInput.value = '';
                 bonificacaoInput.value = '';
+                prorrogacaoInput.value = '';
+                reemissaoInput.value = '';
                 qtdFaturadaInput.value = '';
                 codItemInput.value = '';
                 descricaoProdutoInput.value = '';
@@ -1607,6 +1622,22 @@
                     if (qtdNum !== null) qtd = Math.round(qtdNum);
                 }
 
+                // Converte prorrogação (dias) aceitando ponto e vírgula; arredonda para inteiro
+                const prorrogRaw = prorrogacaoInput.value.trim();
+                let prorrog = null;
+                if (prorrogRaw) {
+                    const prorrogNum = parseValorBR(prorrogRaw);
+                    if (prorrogNum !== null) prorrog = Math.round(prorrogNum);
+                }
+
+                // Converte reemissão (dias) aceitando ponto e vírgula; arredonda para inteiro
+                const reemissaoRaw = reemissaoInput.value.trim();
+                let reemissao = null;
+                if (reemissaoRaw) {
+                    const reemissaoNum = parseValorBR(reemissaoRaw);
+                    if (reemissaoNum !== null) reemissao = Math.round(reemissaoNum);
+                }
+
                 return {
                     numRegistro: numRegistroInput.value.trim(),
                     cliente: clienteInput.value.trim(),
@@ -1623,6 +1654,8 @@
                     // Conversão dos valores usando parseValorBR (aceita ponto e vírgula)
                     valorNFD: parseValorBR(valorNFDInput.value),
                     bonificacao: parseValorBR(bonificacaoInput.value),
+                    prorrogacao: prorrog,
+                    reemissao: reemissao,
                 };
             }
 
@@ -1768,6 +1801,14 @@
                 // Exibir valores no formato BR (ex: 1.234,56)
                 valorNFDInput.value = formatarValorInput(registro.valorNFD);
                 bonificacaoInput.value = formatarValorInput(registro.bonificacao);
+                // Exibir prorrogação (dias)
+                prorrogacaoInput.value = (registro.prorrogacao !== null && registro.prorrogacao !== undefined)
+                    ? formatarQuantidadeInput(registro.prorrogacao)
+                    : '';
+                // Exibir reemissão (dias)
+                reemissaoInput.value = (registro.reemissao !== null && registro.reemissao !== undefined)
+                    ? formatarQuantidadeInput(registro.reemissao)
+                    : '';
 
                 btnSalvar.innerHTML = '✏️ Atualizar Registro';
                 btnSalvar.className = 'btn btn-warning';
@@ -1789,6 +1830,14 @@
                 const tempoTotal = calcularTempoTotal(registro);
                 const valorTotal = registro.valorTotal !== null && registro.valorTotal !== undefined ? registro
                     .valorTotal : (parseFloat(registro.valorNFD) || 0) + (parseFloat(registro.bonificacao) || 0);
+
+                const prorrogTexto = (registro.prorrogacao !== null && registro.prorrogacao !== undefined)
+                    ? `${registro.prorrogacao} dia(s)`
+                    : '-';
+
+                const reemissaoTexto = (registro.reemissao !== null && registro.reemissao !== undefined)
+                    ? `${registro.reemissao} dia(s)`
+                    : '-';
 
                 let htmlTimeline = '';
                 if (registro.historicoEtapas && registro.historicoEtapas.length > 0) {
@@ -1817,6 +1866,8 @@
                     <div class="modal-detail-item"><div class="label">Quantidade Faturada</div><div class="value">${registro.qtdFaturada !== null && registro.qtdFaturada !== undefined ? registro.qtdFaturada : '-'}</div></div>
                     <div class="modal-detail-item"><div class="label">Valor da NFD</div><div class="value">${formatarValor(registro.valorNFD)}</div></div>
                     <div class="modal-detail-item"><div class="label">Bonificação</div><div class="value">${formatarValor(registro.bonificacao)}</div></div>
+                    <div class="modal-detail-item"><div class="label">Prorrogação</div><div class="value">${prorrogTexto}</div></div>
+                    <div class="modal-detail-item"><div class="label">Reemissão</div><div class="value">${reemissaoTexto}</div></div>
                     <div class="modal-detail-item"><div class="label">Valor Total</div><div class="value">${formatarValor(valorTotal)}</div></div>
                     <div class="modal-detail-item full"><div class="label">Causa Resumida</div><div class="value">${registro.causaResumida || '-'}</div></div>
                     <div class="modal-detail-item full"><div class="label">Causa do Problema (Completo)</div><div class="value">${registro.causaCompleta || '-'}</div></div>
@@ -2301,6 +2352,8 @@
                     popularSelectAndamento(false);
                     valorNFDInput.value = '';
                     bonificacaoInput.value = '';
+                    prorrogacaoInput.value = '';
+                    reemissaoInput.value = '';
                     qtdFaturadaInput.value = '';
                     codItemInput.value = '';
                     descricaoProdutoInput.value = '';
