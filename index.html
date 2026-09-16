@@ -5,34 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DONA RITA EMBALAGENS (SAC) - Sistema de Não Conformidades</title>
 
-    <!--
-    ============================================================
-    FIREBASE SECURITY RULES (copiar para Console > Firestore > Regras)
-    ============================================================
-    rules_version = '2';
-    service cloud.firestore {
-      match /databases/{database}/documents {
-        match /registros/{docId} {
-          allow read: if true;
-          allow create: if request.resource.data.numRegistro is string
-                        && request.resource.data.cliente is string
-                        && request.resource.data.numRegistro.size() > 0
-                        && request.resource.data.cliente.size() > 0;
-          allow update: if request.resource.data.numRegistro is string
-                        && request.resource.data.cliente is string;
-          allow delete: if true;
-        }
-        match /{document=**} {
-          allow read, write: if false;
-        }
-      }
-    }
-    ============================================================
-    IMPORTANTE: Quando implementar Authentication, troque
-    "if true" por "if request.auth != null" para maior segurança.
-    ============================================================
-    -->
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1180,6 +1152,22 @@
                         <label class="filter-label">📆 Mês</label>
                         <input type="month" class="form-input" id="dashFiltroMes" style="min-width: 160px;">
                     </div>
+                    <!-- ===== NOVO FILTRO POR ÁREA ===== -->
+                    <div class="filter-group">
+                        <label class="filter-label">🏭 Área</label>
+                        <select class="form-select" id="dashFiltroArea" style="min-width: 160px;">
+                            <option value="">Todas as Áreas</option>
+                            <option value="Produção">Produção</option>
+                            <option value="Qualidade">Qualidade</option>
+                            <option value="Logística">Logística</option>
+                            <option value="Expedição">Expedição</option>
+                            <option value="Comercial">Comercial</option>
+                            <option value="Compras">Compras</option>
+                            <option value="Manutenção">Manutenção</option>
+                            <option value="Administrativo">Administrativo</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                    </div>
                     <button class="btn btn-outline btn-sm" id="btnLimparFiltrosDash" style="margin-bottom: 2px;">
                         ✖ Limpar Filtros
                     </button>
@@ -1212,6 +1200,11 @@
                     <div class="chart-container">
                         <h3>Comparação Quantidade Reclamada vs Bonificação</h3>
                         <canvas id="graficoComparacaoValores"></canvas>
+                    </div>
+                    <!-- ===== NOVO GRÁFICO: ATRASOS / PRORROGAÇÃO ===== -->
+                    <div class="chart-container">
+                        <h3>Atrasos / Dias / Prorrogação (dias)</h3>
+                        <canvas id="graficoAtrasosProrrogacao"></canvas>
                     </div>
                 </div>
             </div>
@@ -1284,6 +1277,7 @@
             let chartStatus = null;
             let chartValoresProdutos = null;
             let chartComparacaoValores = null;
+            let chartAtrasosProrrogacao = null; // NOVO
 
             // ========================================================
             // ELEMENTOS DOM
@@ -1303,7 +1297,7 @@
             const andamentoInput = $('andamento');
             const solucaoProblemaInput = $('solucaoProblema');
             const valorNFDInput = $('valorNFD');
-            const atrasosDiasInput = $('atrasosDias'); // NOVO
+            const atrasosDiasInput = $('atrasosDias');
             const bonificacaoInput = $('bonificacao');
             const prorrogacaoInput = $('prorrogacao');
             const reemissaoInput = $('reemissao');
@@ -1339,6 +1333,7 @@
 
             const dashFiltroData = $('dashFiltroData');
             const dashFiltroMes = $('dashFiltroMes');
+            const dashFiltroArea = $('dashFiltroArea'); // NOVO
             const btnLimparFiltrosDash = $('btnLimparFiltrosDash');
             const btnGerarPDF = $('btnGerarPDF');
 
@@ -1348,6 +1343,7 @@
             const canvasStatus = $('graficoStatus');
             const canvasValoresProdutos = $('graficoValoresProdutos');
             const canvasComparacaoValores = $('graficoComparacaoValores');
+            const canvasAtrasosProrrogacao = $('graficoAtrasosProrrogacao'); // NOVO
 
             const tabButtons = document.querySelectorAll('.tab-btn');
             const tabContents = document.querySelectorAll('.tab-content');
@@ -1657,7 +1653,7 @@
                     if (data.prorrogacao === undefined) data.prorrogacao = null;
                     if (data.reemissao === undefined) data.reemissao = null;
                     if (data.nfNfd === undefined) data.nfNfd = '';
-                    if (data.atrasosDias === undefined) data.atrasosDias = null; // NOVO
+                    if (data.atrasosDias === undefined) data.atrasosDias = null;
                     registros.push(data);
                 });
 
@@ -1752,7 +1748,7 @@
                 setOrigemSelecionada('Interno');
                 popularSelectAndamento(false);
                 valorNFDInput.value = '';
-                atrasosDiasInput.value = ''; // NOVO
+                atrasosDiasInput.value = '';
                 bonificacaoInput.value = '';
                 prorrogacaoInput.value = '';
                 reemissaoInput.value = '';
@@ -1770,7 +1766,7 @@
                 const prorrogRaw = prorrogacaoInput.value.trim();
                 const reemissaoRaw = reemissaoInput.value.trim();
                 const qtdReclamadaRaw = valorNFDInput.value.trim();
-                const atrasosDiasRaw = atrasosDiasInput.value.trim(); // NOVO
+                const atrasosDiasRaw = atrasosDiasInput.value.trim();
 
                 let prorrog = null;
                 if (prorrogRaw) {
@@ -1787,7 +1783,6 @@
                     const n = parseValorBR(qtdReclamadaRaw);
                     if (n !== null) qtdReclamada = Math.round(n);
                 }
-                // NOVO: atrasos/dias sempre inteiro
                 let atrasosDias = null;
                 if (atrasosDiasRaw) {
                     const n = parseValorBR(atrasosDiasRaw);
@@ -1807,7 +1802,7 @@
                     andamento: andamentoInput.value,
                     solucaoProblema: solucaoProblemaInput.value.trim(),
                     valorNFD: qtdReclamada,
-                    atrasosDias: atrasosDias, // NOVO
+                    atrasosDias: atrasosDias,
                     bonificacao: parseValorBR(bonificacaoInput.value),
                     prorrogacao: prorrog,
                     reemissao: reemissao,
@@ -1957,7 +1952,6 @@
                 solucaoProblemaInput.value = registro.solucaoProblema || '';
                 valorNFDInput.value = (registro.valorNFD !== null && registro.valorNFD !== undefined)
                     ? formatarQuantidadeInput(registro.valorNFD) : '';
-                // NOVO
                 atrasosDiasInput.value = (registro.atrasosDias !== null && registro.atrasosDias !== undefined)
                     ? formatarQuantidadeInput(registro.atrasosDias) : '';
                 bonificacaoInput.value = formatarValorInput(registro.bonificacao);
@@ -1992,7 +1986,6 @@
                     ? `${registro.prorrogacao} dia(s)` : '-';
                 const reemissaoTexto = (registro.reemissao !== null && registro.reemissao !== undefined)
                     ? `${registro.reemissao} dia(s)` : '-';
-                // NOVO
                 const atrasosTexto = (registro.atrasosDias !== null && registro.atrasosDias !== undefined)
                     ? `${registro.atrasosDias} dia(s)` : '-';
 
@@ -2111,7 +2104,6 @@
                            </span>`
                         : '';
 
-                    // NOVO: exibição do valor de atrasos/dias
                     const atrasosTexto = (r.atrasosDias !== null && r.atrasosDias !== undefined)
                         ? `${r.atrasosDias} dia(s)` : '-';
 
@@ -2161,9 +2153,11 @@
             function filtrarRegistrosDashboard() {
                 const dataFiltro = dashFiltroData.value;
                 const mesFiltro = dashFiltroMes.value;
+                const areaFiltro = dashFiltroArea ? dashFiltroArea.value : '';
                 return registros.filter(r => {
                     if (dataFiltro && r.dataOcorrencia !== dataFiltro) return false;
                     if (mesFiltro && !String(r.dataOcorrencia || '').startsWith(mesFiltro)) return false;
+                    if (areaFiltro && (r.areaEnvolvida || '') !== areaFiltro) return false;
                     return true;
                 });
             }
@@ -2175,6 +2169,7 @@
                 if (chartStatus) { chartStatus.destroy(); chartStatus = null; }
                 if (chartValoresProdutos) { chartValoresProdutos.destroy(); chartValoresProdutos = null; }
                 if (chartComparacaoValores) { chartComparacaoValores.destroy(); chartComparacaoValores = null; }
+                if (chartAtrasosProrrogacao) { chartAtrasosProrrogacao.destroy(); chartAtrasosProrrogacao = null; } // NOVO
             }
 
             const BAR_DATALABELS = {
@@ -2200,6 +2195,7 @@
                 destruirGraficos();
                 const dados = filtrarRegistrosDashboard();
 
+                // ---------- Gráfico: Ocorrência por Área ----------
                 const areaMap = new Map();
                 dados.forEach(r => {
                     const area = r.areaEnvolvida || 'Não informada';
@@ -2241,6 +2237,7 @@
                     });
                 }
 
+                // ---------- Gráfico: Quantidade Reclamada por Produto ----------
                 const produtoMap = new Map();
                 dados.forEach(r => {
                     const nome = r.descricaoProduto || r.codItem || 'Sem identificação';
@@ -2277,6 +2274,7 @@
                     });
                 }
 
+                // ---------- Gráfico: Motivos de Ocorrência Resumida ----------
                 const motivoMap = new Map();
                 dados.forEach(r => {
                     const motivo = r.causaResumida || 'Não informado';
@@ -2314,6 +2312,7 @@
                     });
                 }
 
+                // ---------- Gráfico: Abertas vs Concluídas ----------
                 let abertas = 0, concluidas = 0;
                 dados.forEach(r => {
                     if (r.andamento === 'Concluído') concluidas++;
@@ -2343,6 +2342,7 @@
                     }
                 });
 
+                // ---------- Gráfico: Bonificação por Produto ----------
                 const bonifMap = new Map();
                 dados.forEach(r => {
                     const produto = r.descricaoProduto || r.codItem || 'Sem identificação';
@@ -2387,6 +2387,7 @@
                     });
                 }
 
+                // ---------- Gráfico: Comparação Qtd vs Bonificação ----------
                 let totalQtdReclamada = 0, totalBonif = 0;
                 dados.forEach(r => {
                     totalQtdReclamada += parseFloat(r.valorNFD) || 0;
@@ -2425,6 +2426,79 @@
                         }
                     }
                 });
+
+                // ========================================================
+                // NOVO GRÁFICO: Atrasos / Dias / Prorrogação (dias)
+                // ========================================================
+                const atrasosPorArea = new Map();
+                dados.forEach(r => {
+                    const area = r.areaEnvolvida || 'Não informada';
+                    if (!atrasosPorArea.has(area)) {
+                        atrasosPorArea.set(area, { atrasos: 0, prorrogacao: 0 });
+                    }
+                    const entry = atrasosPorArea.get(area);
+                    entry.atrasos += parseFloat(r.atrasosDias) || 0;
+                    entry.prorrogacao += parseFloat(r.prorrogacao) || 0;
+                });
+
+                const atrasosLabels = Array.from(atrasosPorArea.keys());
+                const atrasosValores = atrasosLabels.map(a => atrasosPorArea.get(a).atrasos);
+                const prorrogValores = atrasosLabels.map(a => atrasosPorArea.get(a).prorrogacao);
+
+                if (atrasosLabels.length > 0) {
+                    chartAtrasosProrrogacao = new Chart(canvasAtrasosProrrogacao.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: atrasosLabels,
+                            datasets: [
+                                {
+                                    label: 'Atrasos / Dias',
+                                    data: atrasosValores,
+                                    backgroundColor: '#E53935',
+                                    borderColor: '#B71C1C',
+                                    borderWidth: 1,
+                                    borderRadius: 6
+                                },
+                                {
+                                    label: 'Prorrogação (dias)',
+                                    data: prorrogValores,
+                                    backgroundColor: '#F57C00',
+                                    borderColor: '#E65100',
+                                    borderWidth: 1,
+                                    borderRadius: 6
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: true, animation: false,
+                            layout: { padding: { top: 38, right: 12, left: 8, bottom: 5 } },
+                            plugins: {
+                                legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 14 } },
+                                datalabels: {
+                                    ...BAR_DATALABELS,
+                                    font: { weight: 'bold', size: 10 },
+                                    formatter: (v) => v > 0 ? v : ''
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => `${ctx.dataset.label}: ${ctx.raw} dia(s)`
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: { beginAtZero: true, ticks: { precision: 0 }, grace: '18%' }
+                            }
+                        }
+                    });
+                } else {
+                    // Sem dados: mostra uma mensagem simples no container
+                    const ctx = canvasAtrasosProrrogacao.getContext('2d');
+                    ctx.clearRect(0, 0, canvasAtrasosProrrogacao.width, canvasAtrasosProrrogacao.height);
+                    ctx.fillStyle = '#5C5C8A';
+                    ctx.font = 'bold 13px Segoe UI, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Sem dados para os filtros selecionados', canvasAtrasosProrrogacao.width / 2, canvasAtrasosProrrogacao.height / 2);
+                }
             }
 
             // ========================================================
@@ -2438,14 +2512,20 @@
                 try {
                     const dataFiltro = dashFiltroData.value;
                     const mesFiltro = dashFiltroMes.value;
+                    const areaFiltro = dashFiltroArea ? dashFiltroArea.value : '';
                     let filtroTexto = 'Todos os registros';
-                    if (dataFiltro) {
+                    if (dataFiltro && mesFiltro) {
+                        filtroTexto = `Dia: ${formatarData(dataFiltro)} · Mês: ${mesFiltro}`;
+                    } else if (dataFiltro) {
                         filtroTexto = `Dia: ${formatarData(dataFiltro)}`;
                     } else if (mesFiltro) {
                         const [ano, mes] = mesFiltro.split('-');
                         const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                                        'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
                         filtroTexto = `Mês: ${meses[parseInt(mes, 10) - 1]}/${ano}`;
+                    }
+                    if (areaFiltro) {
+                        filtroTexto += (filtroTexto === 'Todos os registros' ? '' : ' · ') + `Área: ${areaFiltro}`;
                     }
 
                     const dados = filtrarRegistrosDashboard();
@@ -2693,9 +2773,15 @@
 
             dashFiltroData.addEventListener('change', renderizarDashboard);
             dashFiltroMes.addEventListener('change', renderizarDashboard);
+            // NOVO: filtro por área
+            if (dashFiltroArea) {
+                dashFiltroArea.addEventListener('change', renderizarDashboard);
+            }
+
             btnLimparFiltrosDash.addEventListener('click', () => {
                 dashFiltroData.value = '';
                 dashFiltroMes.value = '';
+                if (dashFiltroArea) dashFiltroArea.value = '';
                 renderizarDashboard();
                 mostrarToast('Filtros do dashboard removidos!', 'warning');
             });
