@@ -783,11 +783,9 @@
             padding-bottom: 8px;
         }
         .chart-container canvas { max-height: 300px; max-width: 100%; }
-        /* ===== Container do gráfico de Atrasos/Prorrogação (ocupa 2 colunas) ===== */
         .chart-container-full {
             grid-column: 1 / -1;
         }
-        /* ===== Lista por reclamação: Atrasos / Prorrogação ===== */
         .lista-atrasos-prorrogacao {
             margin-top: 14px;
             max-height: 260px;
@@ -1266,7 +1264,12 @@
                         <h3>Comparação Quantidade Reclamada vs Bonificação</h3>
                         <canvas id="graficoComparacaoValores"></canvas>
                     </div>
-                    <!-- ===== NOVO GRÁFICO + LISTA: ATRASOS / PRORROGAÇÃO ===== -->
+                    <!-- ===== GRÁFICO: Nf / Nfd por Área Envolvida (SOMA DOS VALORES) ===== -->
+                    <div class="chart-container">
+                        <h3>Nf / Nfd por Área Envolvida (Valores R$)</h3>
+                        <canvas id="graficoNfNfdArea"></canvas>
+                    </div>
+                    <!-- ===== GRÁFICO + LISTA: ATRASOS / PRORROGAÇÃO ===== -->
                     <div class="chart-container chart-container-full">
                         <h3>Atrasos / Dias / Prorrogação (dias)</h3>
                         <canvas id="graficoAtrasosProrrogacao"></canvas>
@@ -1344,6 +1347,7 @@
             let chartValoresProdutos = null;
             let chartComparacaoValores = null;
             let chartAtrasosProrrogacao = null;
+            let chartNfNfdArea = null;
 
             // ========================================================
             // ELEMENTOS DOM
@@ -1410,6 +1414,7 @@
             const canvasValoresProdutos = $('graficoValoresProdutos');
             const canvasComparacaoValores = $('graficoComparacaoValores');
             const canvasAtrasosProrrogacao = $('graficoAtrasosProrrogacao');
+            const canvasNfNfdArea = $('graficoNfNfdArea');
             const listaAtrasosProrrogacao = $('listaAtrasosProrrogacao');
 
             const tabButtons = document.querySelectorAll('.tab-btn');
@@ -1601,6 +1606,13 @@
             function formatarValor(valor) {
                 if (valor === null || valor === undefined || valor === '' || isNaN(valor)) return '-';
                 return 'R$ ' + parseFloat(valor).toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2, maximumFractionDigits: 2
+                });
+            }
+
+            function formatarMoedaBR(valor) {
+                if (valor === null || valor === undefined || isNaN(valor)) return '0,00';
+                return parseFloat(valor).toLocaleString('pt-BR', {
                     minimumFractionDigits: 2, maximumFractionDigits: 2
                 });
             }
@@ -2237,6 +2249,7 @@
                 if (chartValoresProdutos) { chartValoresProdutos.destroy(); chartValoresProdutos = null; }
                 if (chartComparacaoValores) { chartComparacaoValores.destroy(); chartComparacaoValores = null; }
                 if (chartAtrasosProrrogacao) { chartAtrasosProrrogacao.destroy(); chartAtrasosProrrogacao = null; }
+                if (chartNfNfdArea) { chartNfNfdArea.destroy(); chartNfNfdArea = null; }
             }
 
             const BAR_DATALABELS = {
@@ -2264,7 +2277,6 @@
             function popularListaAtrasosProrrogacao(dados) {
                 if (!listaAtrasosProrrogacao) return;
 
-                // Filtra somente reclamações que possuem atrasos e/ou prorrogação > 0
                 const comValores = dados.filter(r => {
                     const a = parseFloat(r.atrasosDias) || 0;
                     const p = parseFloat(r.prorrogacao) || 0;
@@ -2277,7 +2289,6 @@
                     return;
                 }
 
-                // Ordena por atrasos desc, depois prorrogação desc
                 comValores.sort((a, b) => {
                     const aA = parseFloat(a.atrasosDias) || 0;
                     const bA = parseFloat(b.atrasosDias) || 0;
@@ -2560,6 +2571,72 @@
                     }
                 });
 
+                // ========================================================
+                // GRÁFICO: Nf / Nfd por Área Envolvida (SOMA DOS VALORES)
+                // Soma os valores numéricos digitados no campo Nf / Nfd,
+                // agrupando por área envolvida. Aceita formatos como
+                // "150.41", "71.01", "6.372,28", "1952,57" e "493,45".
+                // ========================================================
+                const nfNfdPorArea = new Map();
+                let totalNfNfd = 0;
+                dados.forEach(r => {
+                    const valorNf = parseValorBR(r.nfNfd);
+                    if (valorNf === null || valorNf === 0) return; // ignora vazios ou zero
+                    const area = r.areaEnvolvida || 'Não informada';
+                    nfNfdPorArea.set(area, (nfNfdPorArea.get(area) || 0) + valorNf);
+                    totalNfNfd += valorNf;
+                });
+
+                const nfNfdLabels = Array.from(nfNfdPorArea.keys());
+                const nfNfdValores = Array.from(nfNfdPorArea.values());
+
+                if (nfNfdLabels.length > 0) {
+                    chartNfNfdArea = new Chart(canvasNfNfdArea.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: nfNfdLabels,
+                            datasets: [{
+                                label: 'Total Nf / Nfd (R$)',
+                                data: nfNfdValores,
+                                backgroundColor: '#00897B',
+                                borderColor: '#00695C',
+                                borderWidth: 1,
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: true, animation: false,
+                            layout: { padding: { top: 38, right: 12, left: 8, bottom: 5 } },
+                            plugins: {
+                                legend: { display: false },
+                                datalabels: {
+                                    ...BAR_DATALABELS,
+                                    font: { weight: 'bold', size: 11 },
+                                    formatter: (v) => abreviarValor(v)
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => 'Total Nf/Nfd: R$ ' + formatarMoedaBR(ctx.raw)
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true, grace: '18%',
+                                    ticks: { callback: (v) => abreviarValor(v) }
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    const ctx = canvasNfNfdArea.getContext('2d');
+                    ctx.clearRect(0, 0, canvasNfNfdArea.width, canvasNfNfdArea.height);
+                    ctx.fillStyle = '#5C5C8A';
+                    ctx.font = 'bold 13px Segoe UI, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Sem valores de Nf / Nfd nos filtros selecionados', canvasNfNfdArea.width / 2, canvasNfNfdArea.height / 2);
+                }
+
                 // ---------- Gráfico: Atrasos / Dias / Prorrogação (dias) ----------
                 const atrasosPorArea = new Map();
                 dados.forEach(r => {
@@ -2663,6 +2740,7 @@
 
                     const dados = filtrarRegistrosDashboard();
                     let totalPendentes = 0, totalConcluidos = 0, totalQtdReclamada = 0, totalBonificacao = 0, totalEmAtraso = 0;
+                    let totalNfNfd = 0;
                     dados.forEach(r => {
                         if (r.andamento === 'Concluído') totalConcluidos++;
                         else {
@@ -2671,6 +2749,8 @@
                         }
                         totalQtdReclamada += parseFloat(r.valorNFD) || 0;
                         totalBonificacao += parseFloat(r.bonificacao) || 0;
+                        const vNf = parseValorBR(r.nfNfd);
+                        if (vNf !== null) totalNfNfd += vNf;
                     });
 
                     const agora = new Date();
@@ -2705,26 +2785,30 @@
                             </div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 25px;">
+                        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 25px;">
                             <div style="background: linear-gradient(135deg, #3C1053 0%, #5B2A86 100%); color: #fff; padding: 14px 10px; border-radius: 12px; text-align: center;">
-                                <div style="font-size: 24px; font-weight: 800;">${dados.length}</div>
-                                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Total Registros</div>
+                                <div style="font-size: 22px; font-weight: 800;">${dados.length}</div>
+                                <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Total Registros</div>
                             </div>
                             <div style="background: linear-gradient(135deg, #E65100 0%, #F57C00 100%); color: #fff; padding: 14px 10px; border-radius: 12px; text-align: center;">
-                                <div style="font-size: 24px; font-weight: 800;">${totalPendentes}</div>
-                                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Pendentes</div>
+                                <div style="font-size: 22px; font-weight: 800;">${totalPendentes}</div>
+                                <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Pendentes</div>
                             </div>
                             <div style="background: linear-gradient(135deg, #388E3C 0%, #4CAF50 100%); color: #fff; padding: 14px 10px; border-radius: 12px; text-align: center;">
-                                <div style="font-size: 24px; font-weight: 800;">${totalConcluidos}</div>
-                                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Concluídos</div>
+                                <div style="font-size: 22px; font-weight: 800;">${totalConcluidos}</div>
+                                <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Concluídos</div>
                             </div>
                             <div style="background: linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%); color: #fff; padding: 14px 10px; border-radius: 12px; text-align: center;">
-                                <div style="font-size: 24px; font-weight: 800;">${totalQtdReclamada.toLocaleString('pt-BR')}</div>
-                                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Qtd. Reclamada</div>
+                                <div style="font-size: 22px; font-weight: 800;">${totalQtdReclamada.toLocaleString('pt-BR')}</div>
+                                <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Qtd. Reclamada</div>
                             </div>
                             <div style="background: linear-gradient(135deg, #1A0033 0%, #3C1053 100%); color: #fff; padding: 14px 10px; border-radius: 12px; text-align: center;">
-                                <div style="font-size: 18px; font-weight: 800;">R$ ${totalBonificacao.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Bonificação</div>
+                                <div style="font-size: 16px; font-weight: 800;">R$ ${totalBonificacao.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Bonificação</div>
+                            </div>
+                            <div style="background: linear-gradient(135deg, #00897B 0%, #4DB6AC 100%); color: #fff; padding: 14px 10px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 16px; font-weight: 800;">R$ ${formatarMoedaBR(totalNfNfd)}</div>
+                                <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">Nf / Nfd</div>
                             </div>
                         </div>
 
@@ -2752,7 +2836,6 @@
 
                     const origCharts = document.querySelectorAll('#chartsGridDashboard .chart-container');
                     for (const chartBox of origCharts) {
-                        // Verifica se é o chart-container full (ocupa 2 colunas)
                         const isFull = chartBox.classList.contains('chart-container-full');
 
                         const boxClone = document.createElement('div');
@@ -2803,9 +2886,6 @@
                             boxClone.appendChild(img);
                         }
 
-                        // =========================================================
-                        // Inclui a LISTA POR RECLAMAÇÃO de Atrasos/Prorrogação no PDF
-                        // =========================================================
                         const listaOrig = chartBox.querySelector('#listaAtrasosProrrogacao');
                         if (listaOrig && listaOrig.innerHTML.trim() && !listaOrig.querySelector('.lista-vazia')) {
                             const extraWrapper = document.createElement('div');
@@ -2815,7 +2895,6 @@
                             extraWrapper.style.overflow = 'hidden';
                             extraWrapper.style.background = '#ffffff';
 
-                            // Cabeçalho da seção da lista
                             const listaHeader = document.createElement('div');
                             listaHeader.style.background = 'linear-gradient(135deg, #3C1053 0%, #5B2A86 100%)';
                             listaHeader.style.color = '#fff';
@@ -2827,11 +2906,9 @@
                             listaHeader.textContent = '📋 Lista por Reclamação: Atrasos / Prorrogação';
                             extraWrapper.appendChild(listaHeader);
 
-                            // Conteúdo (tabela) clonado
                             const listaConteudo = document.createElement('div');
                             listaConteudo.innerHTML = listaOrig.innerHTML;
                             listaConteudo.style.padding = '0';
-                            // Remove max-height / overflow no clone para o PDF
                             listaConteudo.style.maxHeight = 'none';
                             listaConteudo.style.overflow = 'visible';
 
