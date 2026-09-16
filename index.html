@@ -783,6 +783,74 @@
             padding-bottom: 8px;
         }
         .chart-container canvas { max-height: 300px; max-width: 100%; }
+        /* ===== Container do gráfico de Atrasos/Prorrogação (ocupa 2 colunas) ===== */
+        .chart-container-full {
+            grid-column: 1 / -1;
+        }
+        /* ===== Lista por reclamação: Atrasos / Prorrogação ===== */
+        .lista-atrasos-prorrogacao {
+            margin-top: 14px;
+            max-height: 260px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid #E8EAF6;
+            background: #fff;
+        }
+        .lista-atrasos-prorrogacao .lista-vazia {
+            padding: 14px;
+            text-align: center;
+            color: #5C5C8A;
+            font-size: 0.78rem;
+            font-style: italic;
+        }
+        .tabela-atrasos-prorrogacao {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.74rem;
+        }
+        .tabela-atrasos-prorrogacao thead {
+            background: linear-gradient(135deg, #3C1053 0%, #5B2A86 100%);
+            color: #fff;
+        }
+        .tabela-atrasos-prorrogacao th {
+            padding: 8px 8px;
+            text-align: left;
+            font-size: 0.6rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .tabela-atrasos-prorrogacao td {
+            padding: 7px 8px;
+            border-bottom: 1px solid #F0F0F8;
+            color: #1A1A2E;
+            vertical-align: middle;
+        }
+        .tabela-atrasos-prorrogacao tbody tr:nth-child(even) {
+            background: #FAFAFE;
+        }
+        .tabela-atrasos-prorrogacao tbody tr:hover {
+            background: #F0F0F8;
+        }
+        .tabela-atrasos-prorrogacao .val-atrasos {
+            color: #C62828;
+            font-weight: 800;
+        }
+        .tabela-atrasos-prorrogacao .val-prorrog {
+            color: #E65100;
+            font-weight: 800;
+        }
+        .tabela-atrasos-prorrogacao tfoot {
+            background: #F3E5F5;
+            color: #3C1053;
+            font-weight: 800;
+        }
+        .tabela-atrasos-prorrogacao tfoot td {
+            padding: 9px 8px;
+            border-top: 2px solid #B39DDB;
+            font-size: 0.72rem;
+        }
         @media (max-width: 768px) {
             .charts-grid { grid-template-columns: 1fr; }
         }
@@ -1023,13 +1091,11 @@
                             <datalist id="listaDescricaoProdutos"></datalist>
                         </div>
 
-                        <!-- CAMPO: Quantidade Reclamada -->
                         <div class="form-group">
                             <label class="form-label">Quantidade Reclamada</label>
                             <input type="text" inputmode="numeric" class="form-input" id="valorNFD" placeholder="0">
                         </div>
 
-                        <!-- NOVO CAMPO: Atrasos / Dias -->
                         <div class="form-group">
                             <label class="form-label">Atrasos / Dias</label>
                             <input type="text" inputmode="numeric" class="form-input" id="atrasosDias" placeholder="0">
@@ -1152,7 +1218,6 @@
                         <label class="filter-label">📆 Mês</label>
                         <input type="month" class="form-input" id="dashFiltroMes" style="min-width: 160px;">
                     </div>
-                    <!-- ===== NOVO FILTRO POR ÁREA ===== -->
                     <div class="filter-group">
                         <label class="filter-label">🏭 Área</label>
                         <select class="form-select" id="dashFiltroArea" style="min-width: 160px;">
@@ -1201,10 +1266,11 @@
                         <h3>Comparação Quantidade Reclamada vs Bonificação</h3>
                         <canvas id="graficoComparacaoValores"></canvas>
                     </div>
-                    <!-- ===== NOVO GRÁFICO: ATRASOS / PRORROGAÇÃO ===== -->
-                    <div class="chart-container">
+                    <!-- ===== NOVO GRÁFICO + LISTA: ATRASOS / PRORROGAÇÃO ===== -->
+                    <div class="chart-container chart-container-full">
                         <h3>Atrasos / Dias / Prorrogação (dias)</h3>
                         <canvas id="graficoAtrasosProrrogacao"></canvas>
+                        <div id="listaAtrasosProrrogacao" class="lista-atrasos-prorrogacao"></div>
                     </div>
                 </div>
             </div>
@@ -1277,7 +1343,7 @@
             let chartStatus = null;
             let chartValoresProdutos = null;
             let chartComparacaoValores = null;
-            let chartAtrasosProrrogacao = null; // NOVO
+            let chartAtrasosProrrogacao = null;
 
             // ========================================================
             // ELEMENTOS DOM
@@ -1333,7 +1399,7 @@
 
             const dashFiltroData = $('dashFiltroData');
             const dashFiltroMes = $('dashFiltroMes');
-            const dashFiltroArea = $('dashFiltroArea'); // NOVO
+            const dashFiltroArea = $('dashFiltroArea');
             const btnLimparFiltrosDash = $('btnLimparFiltrosDash');
             const btnGerarPDF = $('btnGerarPDF');
 
@@ -1343,7 +1409,8 @@
             const canvasStatus = $('graficoStatus');
             const canvasValoresProdutos = $('graficoValoresProdutos');
             const canvasComparacaoValores = $('graficoComparacaoValores');
-            const canvasAtrasosProrrogacao = $('graficoAtrasosProrrogacao'); // NOVO
+            const canvasAtrasosProrrogacao = $('graficoAtrasosProrrogacao');
+            const listaAtrasosProrrogacao = $('listaAtrasosProrrogacao');
 
             const tabButtons = document.querySelectorAll('.tab-btn');
             const tabContents = document.querySelectorAll('.tab-content');
@@ -2169,7 +2236,7 @@
                 if (chartStatus) { chartStatus.destroy(); chartStatus = null; }
                 if (chartValoresProdutos) { chartValoresProdutos.destroy(); chartValoresProdutos = null; }
                 if (chartComparacaoValores) { chartComparacaoValores.destroy(); chartComparacaoValores = null; }
-                if (chartAtrasosProrrogacao) { chartAtrasosProrrogacao.destroy(); chartAtrasosProrrogacao = null; } // NOVO
+                if (chartAtrasosProrrogacao) { chartAtrasosProrrogacao.destroy(); chartAtrasosProrrogacao = null; }
             }
 
             const BAR_DATALABELS = {
@@ -2189,6 +2256,72 @@
                 if (Math.abs(v) >= 1000000) return (v / 1000000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + 'M';
                 if (Math.abs(v) >= 1000) return (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'k';
                 return v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+            }
+
+            // ========================================================
+            // POPULAR LISTA POR RECLAMAÇÃO: ATRASOS / PRORROGAÇÃO
+            // ========================================================
+            function popularListaAtrasosProrrogacao(dados) {
+                if (!listaAtrasosProrrogacao) return;
+
+                // Filtra somente reclamações que possuem atrasos e/ou prorrogação > 0
+                const comValores = dados.filter(r => {
+                    const a = parseFloat(r.atrasosDias) || 0;
+                    const p = parseFloat(r.prorrogacao) || 0;
+                    return a > 0 || p > 0;
+                });
+
+                if (comValores.length === 0) {
+                    listaAtrasosProrrogacao.innerHTML =
+                        '<div class="lista-vazia">Nenhuma reclamação com atrasos ou prorrogação nos filtros selecionados.</div>';
+                    return;
+                }
+
+                // Ordena por atrasos desc, depois prorrogação desc
+                comValores.sort((a, b) => {
+                    const aA = parseFloat(a.atrasosDias) || 0;
+                    const bA = parseFloat(b.atrasosDias) || 0;
+                    if (bA !== aA) return bA - aA;
+                    const aP = parseFloat(a.prorrogacao) || 0;
+                    const bP = parseFloat(b.prorrogacao) || 0;
+                    return bP - aP;
+                });
+
+                let totalAtrasos = 0;
+                let totalProrrog = 0;
+
+                let html = '<table class="tabela-atrasos-prorrogacao">';
+                html += '<thead><tr>';
+                html += '<th>Nº Reg.</th>';
+                html += '<th>Cliente</th>';
+                html += '<th>Área</th>';
+                html += '<th style="text-align:center;">Atrasos (dias)</th>';
+                html += '<th style="text-align:center;">Prorrog. (dias)</th>';
+                html += '</tr></thead><tbody>';
+
+                comValores.forEach(r => {
+                    const atrasos = parseFloat(r.atrasosDias) || 0;
+                    const prorrog = parseFloat(r.prorrogacao) || 0;
+                    totalAtrasos += atrasos;
+                    totalProrrog += prorrog;
+
+                    const clienteSafe = (r.cliente || '-').replace(/"/g, '&quot;');
+                    html += '<tr>';
+                    html += `<td><strong>#${r.numRegistro || '-'}</strong></td>`;
+                    html += `<td title="${clienteSafe}">${r.cliente || '-'}</td>`;
+                    html += `<td>${r.areaEnvolvida || '-'}</td>`;
+                    html += `<td style="text-align:center;" class="val-atrasos">${atrasos > 0 ? atrasos : '-'}</td>`;
+                    html += `<td style="text-align:center;" class="val-prorrog">${prorrog > 0 ? prorrog : '-'}</td>`;
+                    html += '</tr>';
+                });
+
+                html += '</tbody><tfoot><tr>';
+                html += `<td colspan="3" style="text-align:right;">TOTAIS (${comValores.length} reclamação(ões))</td>`;
+                html += `<td style="text-align:center;">${totalAtrasos}</td>`;
+                html += `<td style="text-align:center;">${totalProrrog}</td>`;
+                html += '</tr></tfoot></table>';
+
+                listaAtrasosProrrogacao.innerHTML = html;
             }
 
             function renderizarDashboard() {
@@ -2427,9 +2560,7 @@
                     }
                 });
 
-                // ========================================================
-                // NOVO GRÁFICO: Atrasos / Dias / Prorrogação (dias)
-                // ========================================================
+                // ---------- Gráfico: Atrasos / Dias / Prorrogação (dias) ----------
                 const atrasosPorArea = new Map();
                 dados.forEach(r => {
                     const area = r.areaEnvolvida || 'Não informada';
@@ -2491,7 +2622,6 @@
                         }
                     });
                 } else {
-                    // Sem dados: mostra uma mensagem simples no container
                     const ctx = canvasAtrasosProrrogacao.getContext('2d');
                     ctx.clearRect(0, 0, canvasAtrasosProrrogacao.width, canvasAtrasosProrrogacao.height);
                     ctx.fillStyle = '#5C5C8A';
@@ -2499,6 +2629,9 @@
                     ctx.textAlign = 'center';
                     ctx.fillText('Sem dados para os filtros selecionados', canvasAtrasosProrrogacao.width / 2, canvasAtrasosProrrogacao.height / 2);
                 }
+
+                // ---------- LISTA POR RECLAMAÇÃO: ATRASOS / PRORROGAÇÃO ----------
+                popularListaAtrasosProrrogacao(dados);
             }
 
             // ========================================================
@@ -2619,6 +2752,9 @@
 
                     const origCharts = document.querySelectorAll('#chartsGridDashboard .chart-container');
                     for (const chartBox of origCharts) {
+                        // Verifica se é o chart-container full (ocupa 2 colunas)
+                        const isFull = chartBox.classList.contains('chart-container-full');
+
                         const boxClone = document.createElement('div');
                         boxClone.style.background = '#FAFAFE';
                         boxClone.style.padding = '16px';
@@ -2626,6 +2762,9 @@
                         boxClone.style.border = '1.5px solid #C5CAE9';
                         boxClone.style.boxSizing = 'border-box';
                         boxClone.style.overflow = 'hidden';
+                        if (isFull) {
+                            boxClone.style.gridColumn = '1 / -1';
+                        }
 
                         const titulo = chartBox.querySelector('h3');
                         const tituloClone = document.createElement('div');
@@ -2662,6 +2801,42 @@
                             img.style.maxHeight = '300px';
                             img.style.objectFit = 'contain';
                             boxClone.appendChild(img);
+                        }
+
+                        // =========================================================
+                        // Inclui a LISTA POR RECLAMAÇÃO de Atrasos/Prorrogação no PDF
+                        // =========================================================
+                        const listaOrig = chartBox.querySelector('#listaAtrasosProrrogacao');
+                        if (listaOrig && listaOrig.innerHTML.trim() && !listaOrig.querySelector('.lista-vazia')) {
+                            const extraWrapper = document.createElement('div');
+                            extraWrapper.style.marginTop = '14px';
+                            extraWrapper.style.borderRadius = '8px';
+                            extraWrapper.style.border = '1px solid #C8B8E0';
+                            extraWrapper.style.overflow = 'hidden';
+                            extraWrapper.style.background = '#ffffff';
+
+                            // Cabeçalho da seção da lista
+                            const listaHeader = document.createElement('div');
+                            listaHeader.style.background = 'linear-gradient(135deg, #3C1053 0%, #5B2A86 100%)';
+                            listaHeader.style.color = '#fff';
+                            listaHeader.style.padding = '8px 12px';
+                            listaHeader.style.fontSize = '11px';
+                            listaHeader.style.fontWeight = '800';
+                            listaHeader.style.letterSpacing = '1px';
+                            listaHeader.style.textTransform = 'uppercase';
+                            listaHeader.textContent = '📋 Lista por Reclamação: Atrasos / Prorrogação';
+                            extraWrapper.appendChild(listaHeader);
+
+                            // Conteúdo (tabela) clonado
+                            const listaConteudo = document.createElement('div');
+                            listaConteudo.innerHTML = listaOrig.innerHTML;
+                            listaConteudo.style.padding = '0';
+                            // Remove max-height / overflow no clone para o PDF
+                            listaConteudo.style.maxHeight = 'none';
+                            listaConteudo.style.overflow = 'visible';
+
+                            extraWrapper.appendChild(listaConteudo);
+                            boxClone.appendChild(extraWrapper);
                         }
 
                         wrap.appendChild(boxClone);
@@ -2773,7 +2948,6 @@
 
             dashFiltroData.addEventListener('change', renderizarDashboard);
             dashFiltroMes.addEventListener('change', renderizarDashboard);
-            // NOVO: filtro por área
             if (dashFiltroArea) {
                 dashFiltroArea.addEventListener('change', renderizarDashboard);
             }
