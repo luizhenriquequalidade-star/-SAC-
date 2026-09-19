@@ -1264,12 +1264,10 @@
                         <h3>Comparação Quantidade Reclamada vs Bonificação</h3>
                         <canvas id="graficoComparacaoValores"></canvas>
                     </div>
-                    <!-- ===== GRÁFICO: Nf / Nfd por Área Envolvida (SOMA DOS VALORES) ===== -->
                     <div class="chart-container">
                         <h3>Nf / Nfd por Área Envolvida (Valores R$)</h3>
                         <canvas id="graficoNfNfdArea"></canvas>
                     </div>
-                    <!-- ===== GRÁFICO + LISTA: ATRASOS / PRORROGAÇÃO ===== -->
                     <div class="chart-container chart-container-full">
                         <h3>Atrasos / Dias / Prorrogação (dias)</h3>
                         <canvas id="graficoAtrasosProrrogacao"></canvas>
@@ -1329,6 +1327,12 @@
             const COLLECTION_NAME = 'registros';
             const LIMITE_REGISTROS = 2000;
             const DIAS_ALERTA_PRAZO = 10;
+
+            // ========================================================
+            // CONFIGURAÇÃO CALLMEBOT (WHATSAPP)
+            // ========================================================
+            const CALLMEBOT_PHONE = '+5535991360544';   // Seu número
+            const CALLMEBOT_APIKEY = '2712040';           // Sua API Key
 
             Chart.register(ChartDataLabels);
 
@@ -1717,6 +1721,24 @@
             }
 
             // ========================================================
+            // CALLMEBOT - ENVIO WHATSAPP
+            // ========================================================
+            async function enviarWhatsApp(mensagem) {
+                if (!CALLMEBOT_PHONE || !CALLMEBOT_APIKEY) {
+                    console.warn('CallMeBot não configurado.');
+                    return;
+                }
+                try {
+                    const textoCodificado = encodeURIComponent(mensagem);
+                    const url = `https://api.callmebot.com/whatsapp.php?phone=${CALLMEBOT_PHONE}&text=${textoCodificado}&apikey=${CALLMEBOT_APIKEY}`;
+                    await fetch(url, { method: 'GET', mode: 'no-cors' });
+                    console.log('📲 WhatsApp solicitado via CallMeBot.');
+                } catch (erro) {
+                    console.error('❌ Erro CallMeBot:', erro);
+                }
+            }
+
+            // ========================================================
             // FIREBASE - OPERAÇÕES
             // ========================================================
             async function carregarRegistrosDoFirebase() {
@@ -1909,6 +1931,28 @@
                 return true;
             }
 
+            // Monta mensagem WhatsApp de um registro
+            function montarMensagemRegistro(titulo, dados, extra = '') {
+                let msg = `${titulo}\n\n`;
+                msg += `*Nº:* #${dados.numRegistro}\n`;
+                msg += `*Cliente:* ${dados.cliente}\n`;
+                msg += `*Data Ocorrência:* ${formatarData(dados.dataOcorrencia)}\n`;
+                msg += `*Área:* ${dados.areaEnvolvida}\n`;
+                msg += `*Origem:* ${dados.origem}\n`;
+                msg += `*Andamento:* ${dados.andamento}\n`;
+                msg += `*Causa:* ${dados.causaResumida}\n`;
+                if (dados.descricaoProduto) msg += `*Produto:* ${dados.descricaoProduto}\n`;
+                if (dados.valorNFD != null) msg += `*Qtd. Reclamada:* ${dados.valorNFD}\n`;
+                if (dados.atrasosDias != null) msg += `*Atrasos:* ${dados.atrasosDias} dia(s)\n`;
+                if (dados.prorrogacao != null) msg += `*Prorrogação:* ${dados.prorrogacao} dia(s)\n`;
+                if (dados.reemissao != null) msg += `*Reemissão:* ${dados.reemissao} dia(s)\n`;
+                if (dados.nfNfd) msg += `*Nf/Nfd:* ${dados.nfNfd}\n`;
+                if (dados.bonificacao != null) msg += `*Bonificação:* R$ ${formatarMoedaBR(dados.bonificacao)}\n`;
+                if (extra) msg += `\n${extra}`;
+                msg += `\n_${new Date().toLocaleString('pt-BR')}_`;
+                return msg;
+            }
+
             async function salvarRegistro(e) {
                 e.preventDefault();
                 if (isLoading) return;
@@ -1955,6 +1999,13 @@
                         });
 
                         mostrarToast(`Registro #${dados.numRegistro} atualizado com sucesso!`, 'success');
+
+                        // 📲 WhatsApp: edição
+                        const extraEdit = mudouAndamento
+                            ? `🔄 *Mudança de Andamento:* ${original.andamento} ➜ ${dados.andamento}`
+                            : '✏️ Registro editado';
+                        enviarWhatsApp(montarMensagemRegistro('✏️ *REGISTRO ATUALIZADO*', dados, extraEdit));
+
                         registroEmEdicao = null;
                     } else {
                         const novoRegistro = {
@@ -1974,6 +2025,9 @@
                         });
 
                         mostrarToast(`Registro #${dados.numRegistro} salvo com sucesso!`, 'success');
+
+                        // 📲 WhatsApp: novo registro
+                        enviarWhatsApp(montarMensagemRegistro('📋 *NOVA RECLAMAÇÃO REGISTRADA*', dados));
                     }
 
                     atualizarStats();
@@ -2007,6 +2061,16 @@
                     renderizarTabela();
                     fecharModal();
                     mostrarToast(`Registro #${registro.numRegistro} excluído!`, 'success');
+
+                    // 📲 WhatsApp: exclusão
+                    let msg = `🗑️ *REGISTRO EXCLUÍDO*\n\n`;
+                    msg += `*Nº:* #${registro.numRegistro}\n`;
+                    msg += `*Cliente:* ${registro.cliente}\n`;
+                    msg += `*Área:* ${registro.areaEnvolvida}\n`;
+                    msg += `*Causa:* ${registro.causaResumida}\n`;
+                    msg += `*Andamento:* ${registro.andamento}\n`;
+                    msg += `\n_${new Date().toLocaleString('pt-BR')}_`;
+                    enviarWhatsApp(msg);
                 } catch (err) {
                     console.error('Erro ao excluir:', err);
                     mostrarToast('Erro ao excluir do Firebase! Verifique sua conexão.', 'error');
@@ -2271,9 +2335,6 @@
                 return v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
             }
 
-            // ========================================================
-            // POPULAR LISTA POR RECLAMAÇÃO: ATRASOS / PRORROGAÇÃO
-            // ========================================================
             function popularListaAtrasosProrrogacao(dados) {
                 if (!listaAtrasosProrrogacao) return;
 
@@ -2339,7 +2400,6 @@
                 destruirGraficos();
                 const dados = filtrarRegistrosDashboard();
 
-                // ---------- Gráfico: Ocorrência por Área ----------
                 const areaMap = new Map();
                 dados.forEach(r => {
                     const area = r.areaEnvolvida || 'Não informada';
@@ -2381,7 +2441,6 @@
                     });
                 }
 
-                // ---------- Gráfico: Quantidade Reclamada por Produto ----------
                 const produtoMap = new Map();
                 dados.forEach(r => {
                     const nome = r.descricaoProduto || r.codItem || 'Sem identificação';
@@ -2418,7 +2477,6 @@
                     });
                 }
 
-                // ---------- Gráfico: Motivos de Ocorrência Resumida ----------
                 const motivoMap = new Map();
                 dados.forEach(r => {
                     const motivo = r.causaResumida || 'Não informado';
@@ -2456,7 +2514,6 @@
                     });
                 }
 
-                // ---------- Gráfico: Abertas vs Concluídas ----------
                 let abertas = 0, concluidas = 0;
                 dados.forEach(r => {
                     if (r.andamento === 'Concluído') concluidas++;
@@ -2486,7 +2543,6 @@
                     }
                 });
 
-                // ---------- Gráfico: Bonificação por Produto ----------
                 const bonifMap = new Map();
                 dados.forEach(r => {
                     const produto = r.descricaoProduto || r.codItem || 'Sem identificação';
@@ -2531,7 +2587,6 @@
                     });
                 }
 
-                // ---------- Gráfico: Comparação Qtd vs Bonificação ----------
                 let totalQtdReclamada = 0, totalBonif = 0;
                 dados.forEach(r => {
                     totalQtdReclamada += parseFloat(r.valorNFD) || 0;
@@ -2571,17 +2626,11 @@
                     }
                 });
 
-                // ========================================================
-                // GRÁFICO: Nf / Nfd por Área Envolvida (SOMA DOS VALORES)
-                // Soma os valores numéricos digitados no campo Nf / Nfd,
-                // agrupando por área envolvida. Aceita formatos como
-                // "150.41", "71.01", "6.372,28", "1952,57" e "493,45".
-                // ========================================================
                 const nfNfdPorArea = new Map();
                 let totalNfNfd = 0;
                 dados.forEach(r => {
                     const valorNf = parseValorBR(r.nfNfd);
-                    if (valorNf === null || valorNf === 0) return; // ignora vazios ou zero
+                    if (valorNf === null || valorNf === 0) return;
                     const area = r.areaEnvolvida || 'Não informada';
                     nfNfdPorArea.set(area, (nfNfdPorArea.get(area) || 0) + valorNf);
                     totalNfNfd += valorNf;
@@ -2637,7 +2686,6 @@
                     ctx.fillText('Sem valores de Nf / Nfd nos filtros selecionados', canvasNfNfdArea.width / 2, canvasNfNfdArea.height / 2);
                 }
 
-                // ---------- Gráfico: Atrasos / Dias / Prorrogação (dias) ----------
                 const atrasosPorArea = new Map();
                 dados.forEach(r => {
                     const area = r.areaEnvolvida || 'Não informada';
@@ -2707,7 +2755,6 @@
                     ctx.fillText('Sem dados para os filtros selecionados', canvasAtrasosProrrogacao.width / 2, canvasAtrasosProrrogacao.height / 2);
                 }
 
-                // ---------- LISTA POR RECLAMAÇÃO: ATRASOS / PRORROGAÇÃO ----------
                 popularListaAtrasosProrrogacao(dados);
             }
 
@@ -2974,6 +3021,9 @@
 
                     document.body.removeChild(container);
                     mostrarToast('PDF do dashboard gerado com sucesso!', 'success');
+
+                    // 📲 WhatsApp: aviso de PDF gerado
+                    enviarWhatsApp(`📄 *PDF do Dashboard gerado*\n\n*Filtro:* ${filtroTexto}\n*Registros:* ${dados.length}\n*Arquivo:* ${nomeArquivo}\n\n_${new Date().toLocaleString('pt-BR')}_`);
                 } catch (err) {
                     console.error('Erro ao gerar PDF:', err);
                     mostrarToast('Erro ao gerar PDF. Tente novamente.', 'error');
@@ -3039,9 +3089,6 @@
 
             btnGerarPDF.addEventListener('click', gerarPDFDashboard);
 
-            // ========================================================
-            // AUTO-PREENCHIMENTO CÓDIGO ↔ DESCRIÇÃO
-            // ========================================================
             codItemInput.addEventListener('input', function() {
                 const codigoDigitado = normalizarTexto(this.value);
                 if (codigoDigitado && mapaCodigoParaDescricao[codigoDigitado]) {
@@ -3089,6 +3136,48 @@
             });
 
             // ========================================================
+            // VERIFICAÇÃO AUTOMÁTICA DE ATRASOS
+            // ========================================================
+            let ultimaVerificacaoAtrasos = 0;
+            let idsNotificados = new Set();
+
+            function verificarAtrasosENotificar(forcar = false) {
+                const agora = Date.now();
+                if (!forcar && agora - ultimaVerificacaoAtrasos < 3600000) return;
+                ultimaVerificacaoAtrasos = agora;
+
+                const emAtraso = registros.filter(r => isAlertaPrazo(r));
+                if (emAtraso.length === 0) return;
+
+                // Filtra os que ainda não foram notificados (evita spam)
+                const novosEmAtraso = emAtraso.filter(r => !idsNotificados.has(r.docId));
+                if (novosEmAtraso.length === 0) return;
+
+                let mensagem = `🚨 *ALERTA DE PRAZO EXCEDIDO* 🚨\n\n`;
+                mensagem += `Existem *${emAtraso.length}* reclamação(ões) com mais de ${DIAS_ALERTA_PRAZO} dias em aberto.\n\n`;
+
+                novosEmAtraso.slice(0, 10).forEach(r => {
+                    const dias = calcularDiasAberto(r);
+                    mensagem += `• *#${r.numRegistro}* - ${r.cliente}\n`;
+                    mensagem += `  ${dias} dias · ${r.areaEnvolvida}\n`;
+                    mensagem += `  ${r.causaResumida}\n\n`;
+                    idsNotificados.add(r.docId);
+                });
+
+                if (novosEmAtraso.length > 10) {
+                    mensagem += `... e mais ${novosEmAtraso.length - 10} reclamação(ões).\n\n`;
+                }
+
+                mensagem += `Acesse o sistema para mais detalhes.\n_${new Date().toLocaleString('pt-BR')}_`;
+
+                enviarWhatsApp(mensagem);
+                mostrarToast(`🚨 ${novosEmAtraso.length} reclamação(ões) em atraso! Notificação enviada.`, 'alert-prazo');
+            }
+
+            // Verifica a cada 1 hora
+            setInterval(() => verificarAtrasosENotificar(false), 3600000);
+
+            // ========================================================
             // INICIALIZAÇÃO
             // ========================================================
             async function iniciar() {
@@ -3108,17 +3197,17 @@
 
                     console.log('✅ Sistema SAC Dona Rita Embalagens carregado!');
                     console.log(`📦 ${registros.length} registro(s) carregado(s).`);
+                    console.log('📲 CallMeBot ativo para:', CALLMEBOT_PHONE);
+
+                    // 📲 Aviso de inicialização
+                    enviarWhatsApp(`✅ *Sistema SAC iniciado*\n\n*Total de registros:* ${registros.length}\n*Usuário conectado ao sistema*\n\n_${new Date().toLocaleString('pt-BR')}_`);
 
                     if (registros.length >= LIMITE_REGISTROS) {
                         mostrarToast(`Limite de ${LIMITE_REGISTROS} registros atingido. Considere arquivar antigos.`, 'warning');
                     }
 
-                    const emAtraso = registros.filter(r => isAlertaPrazo(r)).length;
-                    if (emAtraso > 0) {
-                        setTimeout(() => {
-                            mostrarToast(`🚨 ${emAtraso} reclamação(ões) com mais de ${DIAS_ALERTA_PRAZO} dias em aberto. Verifique!`, 'alert-prazo');
-                        }, 800);
-                    }
+                    // Verifica atrasos após 5 segundos
+                    setTimeout(() => verificarAtrasosENotificar(true), 5000);
                 } catch (e) {
                     console.error('❌ Erro ao carregar do Firebase:', e);
                     let msg = 'Erro ao carregar dados do Firebase! Verifique sua conexão.';
