@@ -1015,7 +1015,6 @@
             <button class="tab-btn" data-tab="dashboard">📊 Dashboard</button>
         </div>
 
-        <!-- ===== ABA: REGISTRO ===== -->
         <div class="tab-content active" id="tab-registro">
             <div class="card">
                 <div class="card-title">
@@ -1146,7 +1145,6 @@
             </div>
         </div>
 
-        <!-- ===== ABA: HISTÓRICO ===== -->
         <div class="tab-content" id="tab-historico">
             <div class="card">
                 <div class="card-title">
@@ -1200,7 +1198,6 @@
             </div>
         </div>
 
-        <!-- ===== ABA: DASHBOARD ===== -->
         <div class="tab-content" id="tab-dashboard">
             <div class="card">
                 <div class="card-title">
@@ -1278,7 +1275,6 @@
         </div>
     </div>
 
-    <!-- Modal -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
             <div class="modal-header">
@@ -1330,9 +1326,10 @@
 
             // ========================================================
             // CONFIGURAÇÃO CALLMEBOT (WHATSAPP)
+            // Número exatamente como o CallMeBot registrou: 553591360544
             // ========================================================
-            const CALLMEBOT_PHONE = '+553591360544';   // Seu número
-            const CALLMEBOT_APIKEY = '2712040';           // Sua API Key
+            const CALLMEBOT_PHONE = '+553591360544';
+            const CALLMEBOT_APIKEY = '2712040';
 
             Chart.register(ChartDataLabels);
 
@@ -1931,7 +1928,6 @@
                 return true;
             }
 
-            // Monta mensagem WhatsApp de um registro
             function montarMensagemRegistro(titulo, dados, extra = '') {
                 let msg = `${titulo}\n\n`;
                 msg += `*Nº:* #${dados.numRegistro}\n`;
@@ -2000,12 +1996,10 @@
 
                         mostrarToast(`Registro #${dados.numRegistro} atualizado com sucesso!`, 'success');
 
-                        // 📲 WhatsApp: edição
-                        const extraEdit = mudouAndamento
-                            ? `🔄 *Mudança de Andamento:* ${original.andamento} ➜ ${dados.andamento}`
-                            : '✏️ Registro editado';
-                        enviarWhatsApp(montarMensagemRegistro('✏️ *REGISTRO ATUALIZADO*', dados, extraEdit));
-
+                        if (mudouAndamento) {
+                            const extraEdit = `🔄 *Mudança de Andamento:* ${original.andamento} ➜ ${dados.andamento}`;
+                            enviarWhatsApp(montarMensagemRegistro('✏️ *REGISTRO ATUALIZADO*', dados, extraEdit));
+                        }
                         registroEmEdicao = null;
                     } else {
                         const novoRegistro = {
@@ -2026,7 +2020,6 @@
 
                         mostrarToast(`Registro #${dados.numRegistro} salvo com sucesso!`, 'success');
 
-                        // 📲 WhatsApp: novo registro
                         enviarWhatsApp(montarMensagemRegistro('📋 *NOVA RECLAMAÇÃO REGISTRADA*', dados));
                     }
 
@@ -2062,7 +2055,6 @@
                     fecharModal();
                     mostrarToast(`Registro #${registro.numRegistro} excluído!`, 'success');
 
-                    // 📲 WhatsApp: exclusão
                     let msg = `🗑️ *REGISTRO EXCLUÍDO*\n\n`;
                     msg += `*Nº:* #${registro.numRegistro}\n`;
                     msg += `*Cliente:* ${registro.cliente}\n`;
@@ -3022,7 +3014,6 @@
                     document.body.removeChild(container);
                     mostrarToast('PDF do dashboard gerado com sucesso!', 'success');
 
-                    // 📲 WhatsApp: aviso de PDF gerado
                     enviarWhatsApp(`📄 *PDF do Dashboard gerado*\n\n*Filtro:* ${filtroTexto}\n*Registros:* ${dados.length}\n*Arquivo:* ${nomeArquivo}\n\n_${new Date().toLocaleString('pt-BR')}_`);
                 } catch (err) {
                     console.error('Erro ao gerar PDF:', err);
@@ -3149,7 +3140,6 @@
                 const emAtraso = registros.filter(r => isAlertaPrazo(r));
                 if (emAtraso.length === 0) return;
 
-                // Filtra os que ainda não foram notificados (evita spam)
                 const novosEmAtraso = emAtraso.filter(r => !idsNotificados.has(r.docId));
                 if (novosEmAtraso.length === 0) return;
 
@@ -3174,7 +3164,6 @@
                 mostrarToast(`🚨 ${novosEmAtraso.length} reclamação(ões) em atraso! Notificação enviada.`, 'alert-prazo');
             }
 
-            // Verifica a cada 1 hora
             setInterval(() => verificarAtrasosENotificar(false), 3600000);
 
             // ========================================================
@@ -3197,16 +3186,14 @@
 
                     console.log('✅ Sistema SAC Dona Rita Embalagens carregado!');
                     console.log(`📦 ${registros.length} registro(s) carregado(s).`);
-                    console.log('📲 CallMeBot ativo para:', CALLMEBOT_PHONE);
+                    console.log('📲 CallMeBot configurado:', CALLMEBOT_PHONE, 'API:', CALLMEBOT_APIKEY);
 
-                    // 📲 Aviso de inicialização
                     enviarWhatsApp(`✅ *Sistema SAC iniciado*\n\n*Total de registros:* ${registros.length}\n*Usuário conectado ao sistema*\n\n_${new Date().toLocaleString('pt-BR')}_`);
 
                     if (registros.length >= LIMITE_REGISTROS) {
                         mostrarToast(`Limite de ${LIMITE_REGISTROS} registros atingido. Considere arquivar antigos.`, 'warning');
                     }
 
-                    // Verifica atrasos após 5 segundos
                     setTimeout(() => verificarAtrasosENotificar(true), 5000);
                 } catch (e) {
                     console.error('❌ Erro ao carregar do Firebase:', e);
